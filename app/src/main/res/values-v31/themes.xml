@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set splash screen background color -->
+        <item name="windowSplashScreenBackground">@color/blueback</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/white</item>
+
+        <!-- Optional: Set splash screen icon -->
+        <!--        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>-->
+
+        <!-- Optional: Set icon background color -->
+        <!--        <item name="windowSplashScreenIconBackgroundColor">@color/white</item>-->
+
+        <!-- Optional: Set post splash screen theme -->
+        <!--        <item name="postSplashScreenTheme">@style/Theme.App</item>-->
+    </style>
+</resources>
