@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.hear2read.h2rng.tts.iso3ToIso2Map
-import java.util.Locale
 
 /**
  * Thread-safe singleton repository for managing voice data across the app. Uses [StateFlow] for
@@ -45,31 +44,85 @@ object H2RVoiceRepository {
     suspend fun initializeDefault() = mutex.withLock {
         if (isInitialized) return@withLock
 
+        /**
+         * Hardcoded list of available languages. This needs to be updated when adding a new voice.
+         * The list is arranged alphabetically to maintain order in the UI
+         */
         _voices.value = listOf(
-                H2RVoice(
-                    assetID = "hin",
-                    locale = Locale.Builder().setLanguage("hi").build(),
-                    id = "hi-tdilv2mono-1",
-//        iso3 = "hin",
-                    sampleRate = 22050
-                ),
-        //    Voice("Punjabi", "pa-tdif-1", mutableStateOf(DownloadStatus.NOT_DOWNLOADED), "pan"),
-                H2RVoice(
-                    assetID = "kan",
-                    locale = Locale.Builder().setLanguage("kn").build(),
-                    id = "kn-v2-tdilh2radditional-1987val-low",
-        //        iso3 = "kan",
-                    isMultiSpeaker = true
-                ),
-                H2RVoice(
-                    assetID = "eng",
-                    locale = Locale.Builder().setLanguage("en").build(),
-                    id = "en-mono-us",
-        //        iso3 = "eng"
-                ),
-        //    Voice("Tamil", "ta-tdif-1", mutableStateOf(DownloadStatus.CORRUPTED), "tam"),
-        //    Voice("Marathi", "ma-tdif-1", mutableStateOf(DownloadStatus.DOWNLOADING), "mar"),
-        //    Voice("Assamese", "as-tdif-1", mutableStateOf(DownloadStatus.CORRUPTED), "asm"),
+            H2RVoice(
+//                assetID = "as",
+                id = "as-v2-tdil-1169-med",
+                sampleRate = 22050
+//                locale = Locale.Builder().setLanguage("as").build()
+            ),
+            H2RVoice(
+//                assetID = "en",
+                id = "en-mono-us",
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "gu",
+                id = "gu-h2r-2329v4schwa-low",
+                isMultiSpeaker = true
+//                locale = Locale.Builder().setLanguage("gu").build()
+            ),
+            H2RVoice(
+//                assetID = "hi",
+                id = "hi-tdilv2mono-1",
+//                locale = Locale.Builder().setLanguage("hi").build(),
+                sampleRate = 22050
+            ),
+            H2RVoice(
+//                assetID = "kn",
+                id = "kn-v2-tdilh2radditional-1987val-low",
+//                locale = Locale.Builder().setLanguage("kn").build(),
+                isMultiSpeaker = true
+            ),
+            H2RVoice(
+//                assetID = "ml",
+                id = "ml-tdil-1729zha-low",
+//                locale = Locale.Builder().setLanguage("ml").build()
+            ),
+            H2RVoice(
+//                assetID = "mr",
+                id = "mr-h2r-2059v3-low",
+                isMultiSpeaker = true
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "ne",
+                id = "ne-h2rgoogle-2445v3-low",
+                isMultiSpeaker = true
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "or",
+                id = "or-tdil-3590v4-low",
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "pa",
+                id = "pa-v4-tdil-1419-low",
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "si",
+                id = "si-v2-asokav1-2677val-low",
+//                locale = Locale.Builder().setLanguage("en").build()
+                // TODO: check sample sentence
+            ),
+            H2RVoice(
+//                assetID = "ta",
+                id = "ta-v1-tdilh2rha-2584valfine-low",
+                isMultiSpeaker = true
+//                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "te",
+                id = "te-v2-tdilh2r-2181val-low",
+                isMultiSpeaker = true
+//                locale = Locale.Builder().setLanguage("en").build()
+            )
         )
 
         isInitialized = true
@@ -115,7 +168,12 @@ object H2RVoiceRepository {
     /**
      * Update both download state and size atomically
      */
-    suspend fun updateDownloadInfo(assetID: String, isDownloaded: Boolean, size: Long) = mutex.withLock {
+    suspend fun updateDownloadInfo(
+        assetID: String,
+        isDownloaded: Boolean,
+        size: Long,
+        filePath: String?
+    ) = mutex.withLock {
         _voices.update { currentVoices ->
             currentVoices.map { voice ->
                 if (voice.assetID == assetID) {
@@ -123,7 +181,9 @@ object H2RVoiceRepository {
                         isDownloaded = isDownloaded,
                         fileSize = size,
                         downloadProgress = if (isDownloaded) 1f else 0f,
-                        downloadedBytes = if (isDownloaded) size else 0L)
+                        downloadedBytes = if (isDownloaded) size else 0L,
+                        fileLocation = filePath
+                        )
                 } else {
                     voice
                 }

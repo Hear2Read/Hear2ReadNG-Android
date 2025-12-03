@@ -4,6 +4,7 @@ package org.hear2read.h2rng.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // TODO!: Clean up the mess
+// TODO!: Extends to other files in this package
 
 // COLOR SCHEME CONFIGURATION
 // Customize these colors to match your app's theme

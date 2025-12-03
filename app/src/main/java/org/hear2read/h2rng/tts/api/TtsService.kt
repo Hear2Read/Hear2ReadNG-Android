@@ -14,8 +14,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeechService
 import android.speech.tts.Voice
 import android.util.Log
-import com.google.android.play.core.assetpacks.AssetPackManagerFactory
-import com.google.android.play.core.assetpacks.AssetPackManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +23,7 @@ import kotlinx.coroutines.launch
 import org.hear2read.h2rng.Hear2ReadNGApplication
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
-import org.hear2read.h2rng.tts.Synthesizer
+import org.hear2read.h2rng.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
 import org.hear2read.h2rng.utils.copyDataDir
 import java.util.Locale
@@ -35,13 +33,17 @@ import java.util.Locale
  *
  */
 class TtsService : TextToSpeechService() {
-//    private val job = SupervisorJob()
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    // TODO move this to repository
-    private lateinit var assetPackManager: AssetPackManager
     private val LOG_TAG = "H2RNG_" + TtsService::class.simpleName
 //    private val _timesource = TimeSource.Monotonic
 
+    /**
+     * Service scope used to wait for the [H2RVoiceRepository] to initialize
+     */
+    private val ttsServiceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    /**
+     * Stores the Locale of the current voice with the ISO 2 letter code of the language
+     */
     private var _curLang: Locale? = null
 
     /**
@@ -55,7 +57,7 @@ class TtsService : TextToSpeechService() {
 
         val app = application as Hear2ReadNGApplication
 
-        scope.launch {
+        ttsServiceScope.launch {
             /*
              Haven't found a way to do this in a cleaner way, and not having the repository
              initialized means that the TTS won't return the correct available voices
@@ -65,11 +67,11 @@ class TtsService : TextToSpeechService() {
             }
         }
 
-        assetPackManager = AssetPackManagerFactory.getInstance(application)
+//        assetPackManager = AssetPackManagerFactory.getInstance(application)
 //        runBlocking{ populateSizes(assetPackManager) }
 //        populateSizes()
 
-        // TODO: check if this is run each time
+        // TODO!: check if this is being copied each time
         Synthesizer.initeSpeak(copyDataDir(this, "espeak-ng-data"))
     }
 
@@ -81,7 +83,7 @@ class TtsService : TextToSpeechService() {
      * to be called before a language is changed. Therefore, all we do is check if the language is
      * downloaded and return a response based on that.
      *
-     * @param lang The ISO 2 letter code of the language TODO: check if 2 letter
+     * @param lang The ISO 3 letter code of the language
      * @param country The ISO code of the country, we ignore this
      * @param variant The variant, we ignore this as well
      * @return Either TextToSpeech.LANG_AVAILABLE or TextToSpeech.LANG_NOT_SUPPORTED depending on
@@ -128,7 +130,7 @@ class TtsService : TextToSpeechService() {
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
         Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
-        // TODO: implement parameters such as rate, amplitude from SyntesisRequest
+        // TODO: implement parameters such as rate, amplitude from SynthesisRequest
         val text = request.charSequenceText.toString()
         val rate = request.speechRate
         val language = request.language
@@ -143,61 +145,60 @@ class TtsService : TextToSpeechService() {
             return
         }
 
-        var foundH2RVoice: H2RVoice? = null
+        var h2RVoice: H2RVoice? = null
 //        val availableVoices = runBlocking { getAvailableVoices() }
         val availableVoices = getCurrentVoices().filter{ it.isDownloaded }
 
         for (voice in availableVoices) {
             if (voice.locale.language == langISO2) {
-                foundH2RVoice = voice
+                h2RVoice = voice
                 break
             }
         }
 
-        if (foundH2RVoice == null) {
+        if (h2RVoice == null) {
             Log.w(LOG_TAG, "No appropriate voice found for synthesis language: $langISO2")
             return
         }
 
-        val assetPackLocation = assetPackManager.getPackLocation(foundH2RVoice.locale.isO3Language) ?:  run {
-            Log.e(LOG_TAG, "getPackLocation returned null")
-            return
-        }
+        // TODO!: Clean up unused code in next release
+//        val assetPackLocation = assetPackManager.getPackLocation(h2RVoice.assetID) ?:  run {
+//            Log.e(LOG_TAG, "getPackLocation returned null")
+//            return
+//        }
 
-        Log.d(LOG_TAG, "Synthesis Voice found ${foundH2RVoice.id}")
+        Log.d(LOG_TAG, "Synthesis Voice found ${h2RVoice.id}")
 
-        var loadVoiceReturn: Int = TextToSpeech.LANG_NOT_SUPPORTED
-
-        // TODO: initiate this elsewhere async and wait here or use the proper scope??
 //        runBlocking {
 //            assetPackLocation.assetsPath()?.let{ loadVoiceReturn =
 //                Synthesizer.getOrLoadModel(it, foundH2RVoice)}
 //
 //        }
 
-        assetPackLocation.assetsPath()?.let{
-            loadVoiceReturn = Synthesizer.getOrLoadModel(it, foundH2RVoice)
-        }
+//        assetPackLocation.assetsPath()?.let{
+//            loadVoiceReturn = Synthesizer.getOrLoadModel(foundH2RVoice)
+//        }
+
+        val loadVoiceReturn: Int = Synthesizer.getOrLoadModel(h2RVoice)
 
         if (loadVoiceReturn != TextToSpeech.LANG_AVAILABLE) {
             Log.e(LOG_TAG, "onSynthesizeText: unable to load language")
             return
         }
 
-        if (_curLang?.language != foundH2RVoice.locale.language) {
-            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${foundH2RVoice.locale}")
-            _curLang = Locale.Builder().setLanguage(foundH2RVoice.locale.language).build()
+        if (_curLang?.language != h2RVoice.locale.language) {
+            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${h2RVoice.locale}")
+            _curLang = Locale.Builder().setLanguage(h2RVoice.locale.language).build()
         }
 
-        // TODO: fix sample rate
-        callback.start(foundH2RVoice.sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
+        // TODO?: fix sample rate
+        callback.start(h2RVoice.sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
 
         if (text.isBlank() || text.isEmpty()) {
             callback.done()
             return
         }
 
-        // TODO: unnecessary? just use the SynthesisCallback
 //        val ttsCallback: (ShortArray) -> Int = fun(shortArray: ShortArray): Int {
 //            // convert FloatArray to ByteArray
 //            val samples = shortArrayToByteArray(shortArray)
@@ -230,13 +231,13 @@ class TtsService : TextToSpeechService() {
             return 1
         }
 
-        val assetPackPath = assetPackLocation.assetsPath() ?: return
+//        val assetPackPath = assetPackLocation.assetsPath() ?: return
 
 //        runBlocking {
 //            Synthesizer.speak(text, foundH2RVoice, 50, 100, assetPackPath, audioCallback)?.join()
 //        }
 
-        Synthesizer.speak(text, foundH2RVoice, 50, 100, assetPackPath, audioCallback)
+        Synthesizer.speak(text, h2RVoice, 50, 100, audioCallback)
 
         callback.done()
     }
@@ -245,7 +246,7 @@ class TtsService : TextToSpeechService() {
         // TODO?: provide way to close model and espeak in Synthesizer
         Log.d(LOG_TAG, "onDestroy: Hear2Read TTS Service")
         super.onDestroy()
-        scope.cancel()
+        ttsServiceScope.cancel()
     }
 
     override fun onGetVoices(): MutableList<Voice> {

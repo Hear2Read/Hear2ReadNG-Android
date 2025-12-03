@@ -41,7 +41,6 @@ fun GlobalTopBar(text: String, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxSize()
                 ) {
                 Image(
-                    // TODO change this to the horizontal logo
                     painter = painterResource(id = R.drawable.hear2read_logo),
                     contentDescription = "Hear2Read Logo",
 //                    modifier = Modifier

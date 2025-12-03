@@ -25,7 +25,7 @@ class FetchSampleTextActivity : Activity() {
      * @return The sample text corresponding the language
      */
     private fun getSampleTextData(lang: String) : String {
-        val iso3lang = Locale(lang).isO3Language
+        val iso3lang = Locale.Builder().setLanguage(lang).build().isO3Language
         val resourceName = "${iso3lang}_sample"
         Log.d(LOG_TAG, "Resource name: $resourceName")
         // TODO: replace with hardcoded conditionals

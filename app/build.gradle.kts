@@ -38,7 +38,8 @@ android {
         compose = true
     }
 
-    assetPacks += listOf(":hin", ":eng", ":kan")
+    assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
+        ":si", ":ta", ":te")
 //    assetPacks += listOf(":hin", ":pan", ":eng")
 }
 

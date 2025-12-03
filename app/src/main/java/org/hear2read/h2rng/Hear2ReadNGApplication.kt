@@ -66,11 +66,14 @@ class Hear2ReadNGApplication : Application() {
             Log.d(LOG_TAG, "syncDownloadStates: packstate of: ${voice.id} is ${packState.toString()}")
 
             if (packState != null) {
-                val isDownloaded = packState.status() == AssetPackStatus.COMPLETED
+//                val assetPackLocation = assetPackManager.getPackLocation(voice.assetID)
+                val filePath = assetPackManager.getPackLocation(voice.assetID)?.assetsPath()
+                val isDownloaded = (packState.status() == AssetPackStatus.COMPLETED)
+                        && !(filePath == null)
                 val size = packState.totalBytesToDownload()
 
                 Log.d(LOG_TAG, "syncDownloadStates: adding: ${voice.id} isDownloaded? ${isDownloaded}")
-                H2RVoiceRepository.updateDownloadInfo(voice.assetID, isDownloaded, size)
+                H2RVoiceRepository.updateDownloadInfo(voice.assetID, isDownloaded, size, filePath)
             }
         }
 //        isRepoSynced = true

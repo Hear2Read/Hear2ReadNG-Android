@@ -58,32 +58,10 @@ fun LanguageSelectionScreen(
     onInstallVoiceClick: () -> Unit
 ) {
     val LOG_TAG = "H2RNG_" + "LanguageSelectionScreen"
-//    val context = LocalContext.current
-//    var isLoading by remember { mutableStateOf(true) }
-    // Get available languages from the existing TTS instance
-//    val availableLanguages = remember(getTTS()) {
-//        getAvailableLanguagesFromTTS(getTTS())
-//    }
-//    val availableLangs = remember(getTTS()) {
-//        getTTS()?.availableLanguages?.toList() ?: emptyList()
-//    }
-    val availableLangs = getTTS()?.availableLanguages?.toList() ?: emptyList()
+    val availableLangs = getTTS()?.availableLanguages?.toList()?.sortedBy { it.displayLanguage }
+        ?: emptyList()
 
     Log.d(LOG_TAG, "availableLangs: $availableLangs")
-
-    // Initialize TTS
-//    LaunchedEffect(key1 = Unit) {
-//        initializeTTS(
-//            context = context,
-//            getTTS = getTTS,
-//            setTTS = setTTS,
-//            onInitialized = { isLoading = false },
-//            onError = {
-//                isLoading = false
-//                // TODO: Handle error
-//            }
-//        )
-//    }
 
     Scaffold(
         topBar = {

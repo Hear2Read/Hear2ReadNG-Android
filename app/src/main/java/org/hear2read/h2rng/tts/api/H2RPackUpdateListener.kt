@@ -1,5 +1,6 @@
 package org.hear2read.h2rng.tts.api
 
+import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.AssetPackState
 import com.google.android.play.core.assetpacks.AssetPackStateUpdateListener
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
@@ -14,10 +15,10 @@ import org.hear2read.h2rng.data.H2RVoiceRepository
  * automatically update progress in the UI
  *
  */
-class H2RPackUpdateListener : AssetPackStateUpdateListener {
-
+class H2RPackUpdateListener(assetPackManager: AssetPackManager) : AssetPackStateUpdateListener {
     // Create a coroutine scope for updating repository from callbacks
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val packManager = assetPackManager
 
     override fun onStateUpdate(state: AssetPackState) {
         val assetID = state.name() // Assuming pack name is voice ID
@@ -49,10 +50,12 @@ class H2RPackUpdateListener : AssetPackStateUpdateListener {
 
                 AssetPackStatus.COMPLETED -> {
                     // Download complete
+                    val filePath = packManager.getPackLocation(assetID)?.assetsPath()
                     H2RVoiceRepository.updateDownloadInfo(
                         assetID = assetID,
-                        isDownloaded = true,
-                        size = state.totalBytesToDownload()
+                        isDownloaded = filePath != null,
+                        size = state.totalBytesToDownload(),
+                        filePath = filePath
                     )
                 }
 

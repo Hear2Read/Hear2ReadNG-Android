@@ -24,19 +24,20 @@ private val LOG_TAG = "H2RNG_$FILENAME"
 // Needs to be updated on new language beyond list
 
 val iso3ToIso2Map = mapOf(
+    "asm" to "as", // Assamese
+    "ben" to "bn", // Bengali
+    "guj" to "gu", // Gujarati
     "hin" to "hi", // Hindi
     "kan" to "kn", // Kannada
+    "mal" to "ml", // Malayalam
+    "mar" to "mr", // Marathi
+    "nep" to "ne", // Nepali
+    "ori" to "or", // Odia
+    "pan" to "pa", // Punjabi (Gurmukhi)
+    "san" to "sa", // Sanskrit
+    "sin" to "si", // Sinhala
     "tel" to "te", // Telugu
     "tam" to "ta", // Tamil
-    "mal" to "ml", // Malayalam
-    "guj" to "gu", // Gujarati
-    "pan" to "pa", // Punjabi (Gurmukhi)
-    "ori" to "or", // Odia
-    "ben" to "bn", // Bengali
-    "mar" to "mr", // Marathi
-    "asm" to "as", // Assamese
-    "sin" to "si", // Sinhala
-    "nep" to "ne", // Nepali
     "eng" to "en", // English
 )
 
@@ -52,6 +53,7 @@ val iso2ToIso3Map = mapOf(
     "bn" to "ben", // Bengali
     "mr" to "mar", // Marathi
     "as" to "asm", // Assamese
+    "sa" to "san", // Sanskrit
     "si" to "sin", // Sinhala
     "ne" to "nep", // Nepali
     "en" to "eng"  // English
@@ -74,7 +76,8 @@ val iso2ToIso3Map = mapOf(
  * @param onInitialized Function called when the UtteranceProgressListener returns after TTS has
  * finished processing the initialization text, when the voice has been confirmed as loaded
  * @param onError Function called when the UtteranceProgressListener returns an error
- * TODO: currently only called when language not found in the setLanguage() method of the TTS
+ * TODO: currently only called when language not found in the setLanguage() method of the TTS.
+ *  Ensure it is also called when the TTS fails to synthesize the language initialization text
  */
 fun initializeTTS(
     context: Context,

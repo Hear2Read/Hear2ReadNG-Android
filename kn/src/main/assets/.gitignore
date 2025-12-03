@@ -1,0 +1,4 @@
+# We don't want to store the voice files in the repo, so ignore everything in this directory
+*
+# Except this file
+!.gitignore

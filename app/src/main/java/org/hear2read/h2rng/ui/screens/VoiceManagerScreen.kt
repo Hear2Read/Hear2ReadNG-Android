@@ -46,14 +46,9 @@ fun VoiceManagerScreen(
     val voices by H2RVoiceRepository.voices.collectAsState()
     val scope = rememberCoroutineScope()
 
-//    LaunchedEffect(Unit) {
-//        withContext(Dispatchers.IO) {
-//            populateSizes(assetPackManager)
-//        }
-//    }
     // Register listener for progress updates
     DisposableEffect(Unit) {
-        val listener = H2RPackUpdateListener()
+        val listener = H2RPackUpdateListener(assetPackManager)
         assetPackManager.registerListener(listener)
 
         onDispose {

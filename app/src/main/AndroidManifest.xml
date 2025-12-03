@@ -22,6 +22,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TTSNGDemo"
         tools:targetApi="31">
+<!--        TODO!: theme needs to be changed to NoActionBar to remove the top black bar? Looks
+                like it is being duplicated in application and can be removed from the activity
+                https://stackoverflow.com/questions/63459487/top-of-the-screen-when-the-app-is-running-showing-a-label-with-the-app-title -->
         <activity
             android:name="org.hear2read.h2rng.tts.api.FetchSampleTextActivity"
             android:exported="true"
