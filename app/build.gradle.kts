@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "org.hear2read.h2rng"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 35
         versionCode = 7
         versionName = "1.5"
@@ -38,8 +38,35 @@ android {
         compose = true
     }
 
-    assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
-        ":si", ":ta", ":te")
+    assetPacks += listOf(":hi", ":en", ":kn")
+
+//    val enableAllVoices: String? by project
+    val enableAllVoices = providers.gradleProperty("enableAllVoices")
+    if (enableAllVoices.getOrNull() == "true") {
+        assetPacks += listOf(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
+            ":si", ":ta", ":te")
+    }
+
+    // Specifies one flavor dimension.
+//    flavorDimensions += "version"
+//    productFlavors {
+//        create("demo") {
+////            dimension = "version"
+//            applicationIdSuffix = ".demo"
+//            versionNameSuffix = "-demo"
+//            assetPacks += listOf(":hi", ":en", ":kn")
+//        }
+//        create("full") {
+////            dimension = "version"
+////            applicationIdSuffix = ".full"
+////            versionNameSuffix = "-full"
+//            assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
+//                ":si", ":ta", ":te")
+//        }
+//    }
+
+//    assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
+//        ":si", ":ta", ":te")
 //    assetPacks += listOf(":hin", ":pan", ":eng")
 }
 
