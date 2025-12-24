@@ -14,6 +14,7 @@ import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.hear2read.h2rng.Hear2ReadNGApplication
+import org.hear2read.h2rng.tts.TTS_NAME
 
 /**
  * Main activity containing the UI part of the app along with the voice manager. Initializes an
@@ -85,7 +86,7 @@ class MainActivity : ComponentActivity() {
     private fun initializeBasicTTS() {
         Log.d(LOG_TAG, "initializeBasicTTS()")
 //        runBlocking { populateSizes(assetPackManager) }
-        tts = TextToSpeech(this) { status ->
+        tts = TextToSpeech(this, { status ->
             if (status == TextToSpeech.SUCCESS) {
                 // TTS initialized successfully
                 Log.d(LOG_TAG, "TTS initialized successfully")
@@ -96,7 +97,7 @@ class MainActivity : ComponentActivity() {
                 Log.e(LOG_TAG, "TTS initialization failure!")
                 isTTSReady = true // TODO show error
             }
-        }
+        }, TTS_NAME)
     }
 
     override fun onDestroy() {
