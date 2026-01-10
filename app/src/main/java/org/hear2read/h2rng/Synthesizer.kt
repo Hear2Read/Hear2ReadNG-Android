@@ -285,27 +285,41 @@ object Synthesizer {
         Log.d(LOG_TAG, "outputTextToPhonemes: $outputTextToPhonemes")
 
         val startRep = _timeSource.markNow()
-        val phonemeIdsArr = outputTextToPhonemes
-            //                .replace(";", ",")
-            //                .replace(" ", ",")
-            //                .replace("\t", ",")
-            //                .replace("\n", ",") // normalise text first into a common delimiter
-            .split(",")
-            .filter { it.isNotBlank() } // filter out empty tokens
-            .map { it.toLong() }
-            .toLongArray()
+//        val phonemeIdsArr = outputTextToPhonemes
+//            //                .replace(";", ",")
+//            //                .replace(" ", ",")
+//            //                .replace("\t", ",")
+//            //                .replace("\n", ",") // normalise text first into a common delimiter
+//            .split(",")
+//            .filter { it.isNotBlank() } // filter out empty tokens
+//            .map { it.toLong() }
+//            .toLongArray()
+
+        val sentenceArray = outputTextToPhonemes
+            .split(";") // sentence array
+            .filter { it.isNotBlank() } // filter out empty sentences
+            .map {
+                it
+                    .split(",") // split each sentence by comma to get token(s)
+                    .filter { token -> token.isNotBlank() } // remove empty token(s)
+                    .map { token -> token.toLong() } // typecast each token to Long
+                    .toLongArray() // convert the iterable into Kotlin LongArray
+            }
+
+        // Added for Debugging
+        for (sentence in sentenceArray) {
+            Log.d(LOG_TAG, "Sentence Begins")
+            for (token in sentence) {
+                Log.d(LOG_TAG, "Token: $token")
+            }
+        }
+
         val endRep = _timeSource.markNow()
         Log.d(LOG_TAG, "Replacement took time: ${(endRep - startRep).toDouble(DurationUnit.MILLISECONDS)}")
 
         //            Log.d(LOG_TAG, phonemeIdsArr.toString())
 
         val startInputPrep = _timeSource.markNow()
-        val phonemeIds = LongBuffer.wrap(phonemeIdsArr)
-        val phonemeIdsShape = longArrayOf(1, phonemeIdsArr.size.toLong())
-
-        val phonemeIdsLengthsArr = longArrayOf(phonemeIdsArr.size.toLong())
-        val phonemeIdsLengths = LongBuffer.wrap(phonemeIdsLengthsArr)
-        val phonemeIdLengthsShape = longArrayOf(phonemeIdsLengthsArr.size.toLong())
 
         // TODO: even verify if it is the correct way to control speed
         // TODO: safely handle phonemeLenScale values out of bounds
@@ -321,82 +335,98 @@ object Synthesizer {
         val speakerID = LongBuffer.wrap(longArrayOf(0))
         val speakerIDShape = longArrayOf(1)
 
-        val ortInputs = mutableMapOf(
-            "input" to OnnxTensor.createTensor(_env, phonemeIds, phonemeIdsShape),
-            "input_lengths" to OnnxTensor.createTensor(
-                _env,
-                phonemeIdsLengths,
-                phonemeIdLengthsShape
-            ),
-            "scales" to OnnxTensor.createTensor(_env, scales, scalesShape),
-        )
-        if (h2RVoice.isMultiSpeaker) {
-            ortInputs["sid"] = OnnxTensor.createTensor(_env, speakerID, speakerIDShape)
-        }
-        val endInputPrep = _timeSource.markNow()
-        Log.d(LOG_TAG, "Input prep took time: ${(endInputPrep - startInputPrep).toDouble(DurationUnit.MILLISECONDS)}")
+        for (itr in sentenceArray.indices) {
+            val sentenceStartTime = _timeSource.markNow()
+            Log.d(LOG_TAG, "Sentence $itr begins")
 
-        try {
-            val start = _timeSource.markNow()
-            _session?.run(ortInputs)?.use { results ->
-                val end = _timeSource.markNow()
-                val inferenceTimeMillis = (end - start).toDouble(DurationUnit.MILLISECONDS)
-                Log.d(LOG_TAG, "ORT took time: $inferenceTimeMillis ms")
+            val phonemeIdsArr = sentenceArray[itr]
+            val phonemeIds = LongBuffer.wrap(phonemeIdsArr)
+            val phonemeIdsShape = longArrayOf(1, phonemeIdsArr.size.toLong())
 
-                val outputTensor =
-                    results.get(0) as OnnxTensor // Since output map will have only one node which is called "output"
-                val outputShape: LongArray = outputTensor.info.shape as LongArray
-                val outputBuffer = outputTensor.floatBuffer
+            val phonemeIdsLengthsArr = longArrayOf(phonemeIdsArr.size.toLong())
+            val phonemeIdsLengths = LongBuffer.wrap(phonemeIdsLengthsArr)
+            val phonemeIdLengthsShape = longArrayOf(phonemeIdsLengthsArr.size.toLong())
 
-                val audioCount = outputShape[3].toInt()
-                val outputArr = FloatArray(audioCount)
-                outputBuffer.get(outputArr)
+            val ortInputs = mutableMapOf(
+                "input" to OnnxTensor.createTensor(_env, phonemeIds, phonemeIdsShape),
+                "input_lengths" to OnnxTensor.createTensor(
+                    _env,
+                    phonemeIdsLengths,
+                    phonemeIdLengthsShape
+                ),
+                "scales" to OnnxTensor.createTensor(_env, scales, scalesShape),
+            )
+            if (h2RVoice.isMultiSpeaker) {
+                ortInputs["sid"] = OnnxTensor.createTensor(_env, speakerID, speakerIDShape)
+            }
+            val endInputPrep = _timeSource.markNow()
+            Log.d(
+                LOG_TAG,
+                "Input prep took time: ${(endInputPrep - sentenceStartTime).toDouble(DurationUnit.MILLISECONDS)}"
+            )
 
-                // Find max value in outputArr
-                var maxAudioValue: Float = Float.NEGATIVE_INFINITY
-                for (i in 0 until audioCount) {
-                    val value = outputArr[i]
-                    if (value > maxAudioValue) {
-                        maxAudioValue = value
+            try {
+                val start = _timeSource.markNow()
+                _session?.run(ortInputs)?.use { results ->
+                    val end = _timeSource.markNow()
+                    val inferenceTimeMillis = (end - start).toDouble(DurationUnit.MILLISECONDS)
+                    Log.d(LOG_TAG, "ORT took time: $inferenceTimeMillis ms")
+
+                    val outputTensor =
+                        results.get(0) as OnnxTensor // Since output map will have only one node which is called "output"
+                    val outputShape: LongArray = outputTensor.info.shape as LongArray
+                    val outputBuffer = outputTensor.floatBuffer
+
+                    val audioCount = outputShape[3].toInt()
+                    val outputArr = FloatArray(audioCount)
+                    outputBuffer.get(outputArr)
+
+                    // Find max value in outputArr
+                    var maxAudioValue: Float = Float.NEGATIVE_INFINITY
+                    for (i in 0 until audioCount) {
+                        val value = outputArr[i]
+                        if (value > maxAudioValue) {
+                            maxAudioValue = value
+                        }
                     }
-                }
 
-                // TODO: discuss if it is the correct and preferred way
-                // TODO: handle amplitude out of bounds
-                val audioScale = MAX_WAV_VALUE * (amplitude.toFloat() / 100.0f) / max(
-                    0.01f,
-                    maxAudioValue
-                ) // 0.01f to avoid division by zero
+                    // TODO: discuss if it is the correct and preferred way
+                    // TODO: handle amplitude out of bounds
+                    val audioScale = MAX_WAV_VALUE * (amplitude.toFloat() / 100.0f) / max(
+                        0.01f,
+                        maxAudioValue
+                    ) // 0.01f to avoid division by zero
 //                val shortArray = ShortArray(audioCount)
-                val byteArray = ByteArray(audioCount * Short.SIZE_BYTES)
-                for (i in 0 until audioCount) {
-                    val scaled = outputArr[i] * audioScale
+                    val byteArray = ByteArray(audioCount * Short.SIZE_BYTES)
+                    for (i in 0 until audioCount) {
+                        val scaled = outputArr[i] * audioScale
 
 //                    shortArray[i] = scaled.coerceIn(
 //                        Short.MIN_VALUE.toFloat(),
 //                        Short.MAX_VALUE.toFloat()
 //                    ).toInt().toShort()
 
-                    val intVal = scaled.coerceIn(
-                        Short.MIN_VALUE.toFloat(),
-                        Short.MAX_VALUE.toFloat()
-                    ).toInt()
+                        val intVal = scaled.coerceIn(
+                            Short.MIN_VALUE.toFloat(),
+                            Short.MAX_VALUE.toFloat()
+                        ).toInt()
 
-                    byteArray[2*i] = (intVal).toByte()
-                    byteArray[2*i + 1] = (intVal shr 8).toByte()
-                }
+                        byteArray[2 * i] = (intVal).toByte()
+                        byteArray[2 * i + 1] = (intVal shr 8).toByte()
+                    }
 
-                val realTimeMillis = audioCount.toDouble() * 1000.0 / 22500.0
-                Log.d(LOG_TAG,"Real time: $realTimeMillis ms")
+                    val realTimeMillis = audioCount.toDouble() * 1000.0 / 22500.0
+                    Log.d(LOG_TAG, "Real time: $realTimeMillis ms")
 
-                Log.d(LOG_TAG,"Inference ratio: ${inferenceTimeMillis / realTimeMillis}")
+                    Log.d(LOG_TAG, "Inference ratio: ${inferenceTimeMillis / realTimeMillis}")
 
 //                callback(shortArray)
-                audioCallback(byteArray)
+                    audioCallback(byteArray)
+                }
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Exception ${e.message} has occurred.")
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            Log.e(LOG_TAG,"Exception ${e.message} has occurred.")
-            e.printStackTrace()
         }
 
 //        return _speakJob

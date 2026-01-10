@@ -17,9 +17,10 @@ import org.hear2read.h2rng.tts.iso3ToIso2Map
 fun splitIntoSentences(text: String): List<String> {
     if (text.isBlank()) return emptyList()
 
-    return text.split(Regex("[.!?]+"))
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
+//    return text.split(Regex("[.!?]+"))
+//        .map { it.trim() }
+//        .filter { it.isNotBlank() }
+    return listOf(text)
 }
 
 /**
