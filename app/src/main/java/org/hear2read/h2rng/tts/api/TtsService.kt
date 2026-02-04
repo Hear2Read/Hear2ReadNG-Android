@@ -20,6 +20,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import org.hear2read.h2rng.Hear2ReadNGApplication
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
@@ -27,6 +30,9 @@ import org.hear2read.h2rng.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
 import org.hear2read.h2rng.utils.copyDataDir
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
+
+var bufferIndex = 0
 
 /**
  * [TextToSpeechService] implementation for the Hear2ReadNG TTS synthesiser
@@ -40,6 +46,14 @@ class TtsService : TextToSpeechService() {
      * Service scope used to wait for the [H2RVoiceRepository] to initialize
      */
     private val ttsServiceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private val concurrent = 2
+
+    val buffer = ArrayDeque<ByteArray>()
+    val empty = Semaphore(concurrent)
+    val full = Semaphore(1)
+    val mtx = Mutex(false)
+    val isFinished = AtomicBoolean(false)
 
     /**
      * Stores the Locale of the current voice with the ISO 2 letter code of the language
@@ -62,6 +76,7 @@ class TtsService : TextToSpeechService() {
              Haven't found a way to do this in a cleaner way, and not having the repository
              initialized means that the TTS won't return the correct available voices
              */
+            full.acquire()
             while (!app.isVoiceRepositoryReady()) {
                 delay(50)
             }
@@ -215,20 +230,28 @@ class TtsService : TextToSpeechService() {
 //            return 1
 //        }
 
-        val audioCallback: (ByteArray) -> Int = fun(byteArray: ByteArray): Int {
+        ttsServiceScope.launch {
             // convert FloatArray to ByteArray
 //            val samples = shortArrayToByteArray(shortArray)
-            val maxBufferSize: Int = callback.maxBufferSize
-            var offset = 0
-            while (offset < byteArray.size) {
-                val bytesToWrite = maxBufferSize.coerceAtMost(byteArray.size - offset)
-                callback.audioAvailable(byteArray, offset, bytesToWrite)
-                offset += bytesToWrite
+            while (!isFinished.get()) {
+                full.acquire()
+                mtx.lock()
+                val byteArray = buffer.removeFirst()
+                mtx.unlock()
+                empty.release()
+
+                val maxBufferSize: Int = callback.maxBufferSize
+                var offset = 0
+                while (offset < byteArray.size) {
+                    val bytesToWrite = maxBufferSize.coerceAtMost(byteArray.size - offset)
+                    callback.audioAvailable(byteArray, offset, bytesToWrite)
+                    offset += bytesToWrite
+                }
             }
 
             // 1 means to continue
             // 0 means to stop
-            return 1
+//            return 1
         }
 
 //        val assetPackPath = assetPackLocation.assetsPath() ?: return
@@ -236,8 +259,9 @@ class TtsService : TextToSpeechService() {
 //        runBlocking {
 //            Synthesizer.speak(text, foundH2RVoice, 50, 100, assetPackPath, audioCallback)?.join()
 //        }
-
-        Synthesizer.speak(text, h2RVoice, 50, 100, audioCallback)
+        runBlocking {
+            Synthesizer.speak(text, h2RVoice, 50, 100, empty, full, mtx, buffer, isFinished)
+        }
 
         callback.done()
     }

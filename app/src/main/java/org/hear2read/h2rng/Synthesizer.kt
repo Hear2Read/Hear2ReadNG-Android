@@ -13,11 +13,19 @@ import ai.onnxruntime.OrtSession
 import android.speech.tts.TextToSpeech.LANG_AVAILABLE
 import android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
 import android.util.Log
+import android.util.MutableInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import org.hear2read.h2rng.data.H2RVoice
+import org.hear2read.h2rng.tts.api.bufferIndex
 import org.hear2read.h2rng.utils.getFileWithExtension
 import java.lang.Float.max
 import java.nio.FloatBuffer
 import java.nio.LongBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
@@ -217,14 +225,18 @@ object Synthesizer {
      * @return Job associated with speaking
      */
     @JvmStatic
-    fun speak(
+    suspend fun speak(
         text: String,
         h2RVoice: H2RVoice,
         rate: Int,
         amplitude: Int,
 //        assetPackPath: String,
 //        callback: ((shortArray : ShortArray) -> Int),
-        audioCallback: ((byteArray: ByteArray) -> Int)
+        empty: Semaphore,
+        full: Semaphore,
+        mtx: Mutex,
+        buffer: ArrayDeque<ByteArray>,
+        isFinished: AtomicBoolean
     ) {
 //        if (_loadJob == null)
 //            return null
@@ -421,13 +433,20 @@ object Synthesizer {
                     Log.d(LOG_TAG, "Inference ratio: ${inferenceTimeMillis / realTimeMillis}")
 
 //                callback(shortArray)
-                    audioCallback(byteArray)
+                    empty.acquire()
+                    mtx.lock()
+                    buffer.addLast(byteArray)
+                    mtx.unlock()
+                    full.release()
                 }
             } catch (e: Exception) {
+                isFinished.set(true)
                 Log.e(LOG_TAG, "Exception ${e.message} has occurred.")
                 e.printStackTrace()
             }
         }
+
+        isFinished.set(true)
 
 //        return _speakJob
     }
