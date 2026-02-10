@@ -202,6 +202,9 @@ fun playSentence(
 ) {
     val utteranceId = "SENTENCE_$index"
 
+    // Set standard speech rate not affected by user settings for demo
+    tts?.setSpeechRate(1.0f)
+
     tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
         override fun onAudioAvailable(uttId: String?, audio: ByteArray?) {
             super.onAudioAvailable(utteranceId, audio)

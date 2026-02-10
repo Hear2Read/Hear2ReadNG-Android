@@ -47,6 +47,11 @@ class TtsService : TextToSpeechService() {
     private var _curLang: Locale? = null
 
     /**
+     * Stores the value of the current rate of speech
+     */
+    private var _curRate: Int = 100
+
+    /**
      * onCreate checks whether the H2RVoiceRepository has been initialized and the download states
      * synced before continuing. Also ensures that the espeak data dir has been copied.
      *
@@ -128,7 +133,7 @@ class TtsService : TextToSpeechService() {
      * @param callback [SynthesisCallback] used to feed the synthesized audio
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
-        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
+//        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
         // TODO: implement parameters such as rate, amplitude from SynthesisRequest
         val text = request.charSequenceText.toString()
@@ -167,7 +172,7 @@ class TtsService : TextToSpeechService() {
 //            return
 //        }
 
-        Log.d(LOG_TAG, "Synthesis Voice found ${h2RVoice.id}")
+//        Log.d(LOG_TAG, "Synthesis Voice found ${h2RVoice.id}")
 
 //        runBlocking {
 //            assetPackLocation.assetsPath()?.let{ loadVoiceReturn =
@@ -219,6 +224,7 @@ class TtsService : TextToSpeechService() {
             // convert FloatArray to ByteArray
 //            val samples = shortArrayToByteArray(shortArray)
             val maxBufferSize: Int = callback.maxBufferSize
+//            Log.d(LOG_TAG, "maxBufferSize: $maxBufferSize")
             var offset = 0
             while (offset < byteArray.size) {
                 val bytesToWrite = maxBufferSize.coerceAtMost(byteArray.size - offset)
@@ -237,7 +243,7 @@ class TtsService : TextToSpeechService() {
 //            Synthesizer.speak(text, foundH2RVoice, 50, 100, assetPackPath, audioCallback)?.join()
 //        }
 
-        Synthesizer.speak(text, h2RVoice, 50, 100, audioCallback)
+        Synthesizer.speak(text, h2RVoice, rate, 100, audioCallback)
 
         callback.done()
     }
