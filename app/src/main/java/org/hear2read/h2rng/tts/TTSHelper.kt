@@ -4,6 +4,8 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import org.hear2read.h2rng.R
+import org.hear2read.h2rng.data.H2RVoice
 import java.util.*
 
 /**
@@ -57,6 +59,19 @@ val iso2ToIso3Map = mapOf(
     "si" to "sin", // Sinhala
     "ne" to "nep", // Nepali
     "en" to "eng"  // English
+)
+
+/**
+ * Data class holding parameters relevant to synthesis
+ *
+ * @property h2RVoice [H2RVoice] object corresponding to relevant voice
+ * @property phonemeLength Parameter used to control speech rate. Inverse to rate.
+ * @property amplitude Amplitude of output audio. Currently not being modified
+ */
+data class SynthParams(
+    val h2RVoice: H2RVoice,
+    val phonemeLength: Float,
+    val amplitude: Int = 100
 )
 
 /**
@@ -173,6 +188,7 @@ fun setupUtteranceListener(tts: TextToSpeech, onInitComplete: (() -> Unit)? = nu
             // Handle sentence completion
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onError(utteranceId: String?) {
             // TODO: Handle error
         }
@@ -223,6 +239,7 @@ fun playSentence(
             }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onError(uttId: String?) {
             onComplete()
         }
@@ -237,17 +254,35 @@ fun playSentence(
  * content of the text is roughly "This is an example of speech in <language>", where language is
  * the language name. It currently uses reflection based deprecated code to access the correct text
  * from the resources. This needs to be replaced with hardcoded conditionals
- * TODO: Correct deprecated code
  *
  * @param context [Context] passed to access the app resources
  * @param languageCode ISO 3 letter code of the language
  * @return String of the sample text
  */
 fun getSampleText(context: Context, languageCode: String): String {
-    val resourceName = "${languageCode}_sample"
-    Log.d(LOG_TAG, "Resource name: $resourceName")
-    val resId = context.resources.getIdentifier(resourceName, "string", context.packageName)
-    val sampleText = if (resId != 0) context.getString(resId) else "Some random sample text."
+//    val resourceName = "${languageCode}_sample"
+//    Log.d(LOG_TAG, "Resource name: $resourceName")
+
+    val sampleText = when (languageCode) {
+        "asm" -> context.resources.getString(R.string.asm_sample)
+//        "ben" -> context.resources.getString(R.string.ben_sample)
+        "guj" -> context.resources.getString(R.string.guj_sample)
+        "hin" -> context.resources.getString(R.string.hin_sample)
+        "kan" -> context.resources.getString(R.string.kan_sample)
+        "mal" -> context.resources.getString(R.string.mal_sample)
+        "mar" -> context.resources.getString(R.string.mar_sample)
+        "nep" -> context.resources.getString(R.string.nep_sample)
+        "ori" -> context.resources.getString(R.string.ori_sample)
+        "pan" -> context.resources.getString(R.string.pan_sample)
+        "san" -> context.resources.getString(R.string.san_sample)
+        "sin" -> context.resources.getString(R.string.sin_sample)
+        "tel" -> context.resources.getString(R.string.tel_sample)
+        "tam" -> context.resources.getString(R.string.tam_sample)
+        "eng" -> context.resources.getString(R.string.eng_sample)
+        else -> "Unknown language"
+    }
+//    val resId = context.resources.getIdentifier(resourceName, "string", context.packageName)
+//    val sampleText = if (resId != 0) context.getString(resId) else "Some random sample text."
     return sampleText
 }
 
@@ -256,7 +291,6 @@ fun getSampleText(context: Context, languageCode: String): String {
  * content of the text is usually the first paragraph of the language's article in the Wikipedia of
  * the language. It currently uses reflection based deprecated code to access the correct text
  * from the resources. This needs to be replaced with hardcoded conditionals
- * TODO: Correct deprecated code
  * TODO: Currently unused, may be used in the future
  *
  * @param context [Context] passed to access the app resources
@@ -264,9 +298,28 @@ fun getSampleText(context: Context, languageCode: String): String {
  * @return String of the demo text
  */
 fun getDemoText(context: Context, languageCode: String): String {
-    val resourceName = "${languageCode}_demo"
-    Log.d(LOG_TAG, "Resource name: $resourceName")
-    val resId = context.resources.getIdentifier(resourceName, "string", context.packageName)
-    val sampleText = if (resId != 0) context.getString(resId) else "Some random sample text."
+//    val resourceName = "${languageCode}_demo"
+//    Log.d(LOG_TAG, "Resource name: $resourceName")
+
+    val sampleText = when (languageCode) {
+        "asm" -> context.resources.getString(R.string.asm_demo)
+//        "ben" -> context.resources.getString(R.string.ben_demo)
+        "guj" -> context.resources.getString(R.string.guj_demo)
+        "hin" -> context.resources.getString(R.string.hin_demo)
+        "kan" -> context.resources.getString(R.string.kan_demo)
+        "mal" -> context.resources.getString(R.string.mal_demo)
+        "mar" -> context.resources.getString(R.string.mar_demo)
+        "nep" -> context.resources.getString(R.string.nep_demo)
+        "ori" -> context.resources.getString(R.string.ori_demo)
+        "pan" -> context.resources.getString(R.string.pan_demo)
+        "san" -> context.resources.getString(R.string.san_demo)
+//        "sin" -> context.resources.getString(R.string.sin_demo)
+        "tel" -> context.resources.getString(R.string.tel_demo)
+        "tam" -> context.resources.getString(R.string.tam_demo)
+//        "eng" -> context.resources.getString(R.string.eng_demo)
+        else -> "Unknown language"
+    }
+//    val resId = context.resources.getIdentifier(resourceName, "string", context.packageName)
+//    val sampleText = if (resId != 0) context.getString(resId) else "Some random sample text."
     return sampleText
 }

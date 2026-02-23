@@ -2,6 +2,7 @@ package org.hear2read.h2rng
 
 import android.app.Application
 import android.util.Log
+import com.google.android.play.core.assetpacks.AssetPackException
 import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import com.google.android.play.core.assetpacks.model.AssetPackErrorCode
@@ -64,7 +65,7 @@ class Hear2ReadNGApplication : Application() {
 
         for(pack in packList) {
             // Adding a try/catch block as all voice packs may not be included in the build while
-            // texting locally
+            // testing locally
             try {
                 val packStates = assetPackManager.requestPackStates(listOf(pack))
                 val packState = packStates.packStates()[pack]
@@ -94,26 +95,15 @@ class Hear2ReadNGApplication : Application() {
                     "AssetPack $pack not found in local testing! Deleting from repository")
                 H2RVoiceRepository.removeVoice(pack)
             }
+            catch (e: AssetPackException) {
+                Log.w(LOG_TAG,
+                    "Error obtaining asset pack information, check internet: ${e.message}")
+            }
+            catch (e: Exception) {
+                Log.w(LOG_TAG,
+                    "Unexpected error loading asset packs: ${e.message}")
+            }
         }
-
-//        val packStates = assetPackManager.requestPackStates(packList)
-//
-//        voices.forEach { voice ->
-//            val packState = packStates.packStates()[voice.assetID]
-//            Log.d(LOG_TAG, "syncDownloadStates: packstate of: ${voice.id} is ${packState.toString()}")
-//
-//            if (packState != null) {
-////                val assetPackLocation = assetPackManager.getPackLocation(voice.assetID)
-//                val filePath = assetPackManager.getPackLocation(voice.assetID)?.assetsPath()
-//                val isDownloaded = (packState.status() == AssetPackStatus.COMPLETED)
-//                        && !(filePath == null)
-//                val size = packState.totalBytesToDownload()
-//
-//                Log.d(LOG_TAG, "syncDownloadStates: adding: ${voice.id} isDownloaded? ${isDownloaded}")
-//                H2RVoiceRepository.updateDownloadInfo(voice.assetID, isDownloaded, size, filePath)
-//            }
-//        }
-//        isRepoSynced = true
     }
 
 

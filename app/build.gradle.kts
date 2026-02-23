@@ -12,8 +12,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.6"
+        versionCode = 12
+        versionName = "1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -40,34 +40,12 @@ android {
 
     assetPacks += listOf(":hi", ":en", ":kn")
 
-//    val enableAllVoices: String? by project
     val enableAllVoices = providers.gradleProperty("enableAllVoices")
     if (enableAllVoices.getOrNull() == "true") {
         assetPacks += listOf(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
             ":si", ":ta", ":te")
     }
 
-    // Specifies one flavor dimension.
-//    flavorDimensions += "version"
-//    productFlavors {
-//        create("demo") {
-////            dimension = "version"
-//            applicationIdSuffix = ".demo"
-//            versionNameSuffix = "-demo"
-//            assetPacks += listOf(":hi", ":en", ":kn")
-//        }
-//        create("full") {
-////            dimension = "version"
-////            applicationIdSuffix = ".full"
-////            versionNameSuffix = "-full"
-//            assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
-//                ":si", ":ta", ":te")
-//        }
-//    }
-
-//    assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
-//        ":si", ":ta", ":te")
-//    assetPacks += listOf(":hin", ":pan", ":eng")
 }
 
 dependencies {

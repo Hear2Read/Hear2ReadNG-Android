@@ -7,10 +7,17 @@
 
 package org.hear2read.h2rng.tts.api
 
+import android.database.ContentObserver
 import android.media.AudioFormat
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.speech.tts.SynthesisCallback
 import android.speech.tts.SynthesisRequest
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.ERROR
+import android.speech.tts.TextToSpeech.SUCCESS
 import android.speech.tts.TextToSpeechService
 import android.speech.tts.Voice
 import android.util.Log
@@ -24,9 +31,14 @@ import org.hear2read.h2rng.Hear2ReadNGApplication
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
 import org.hear2read.h2rng.Synthesizer
+import org.hear2read.h2rng.tts.SynthParams
+import org.hear2read.h2rng.tts.SynthesisPipeline
 import org.hear2read.h2rng.tts.iso3ToIso2Map
 import org.hear2read.h2rng.utils.copyDataDir
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.ContinuationInterceptor
+import kotlin.coroutines.coroutineContext
 
 /**
  * [TextToSpeechService] implementation for the Hear2ReadNG TTS synthesiser
@@ -34,7 +46,6 @@ import java.util.Locale
  */
 class TtsService : TextToSpeechService() {
     private val LOG_TAG = "H2RNG_" + TtsService::class.simpleName
-//    private val _timesource = TimeSource.Monotonic
 
     /**
      * Service scope used to wait for the [H2RVoiceRepository] to initialize
@@ -45,6 +56,22 @@ class TtsService : TextToSpeechService() {
      * Stores the Locale of the current voice with the ISO 2 letter code of the language
      */
     private var _curLang: Locale? = null
+
+    /**
+     * Stores the value of the current rate of speech
+     */
+    private var _curRate: Int = 100
+
+    /**
+     * Stores thread safe reference to current pipeline
+     */
+    private val _curPipeline = AtomicReference<SynthesisPipeline?>(null)
+
+    /**
+     * Settings observer to check system TTS language change
+     */
+    private lateinit var settingsObserver: ContentObserver
+
 
     /**
      * onCreate checks whether the H2RVoiceRepository has been initialized and the download states
@@ -90,21 +117,15 @@ class TtsService : TextToSpeechService() {
      * whether the voice is found
      */
     override fun onLoadLanguage(lang: String?, country: String?, variant: String?): Int {
-
-        Log.d(LOG_TAG, "onLoadLanguage: $lang, $country, $variant")
-
-//        val langISO2 = if (lang?.length==3) iso3ToIso2Map[lang] else lang
-
-//        val availableLanguages = runBlocking { getAvailableVoices() }
+    Log.d(LOG_TAG, "onLoadLanguage: $lang")
 
         val currentVoices = getCurrentVoices()
 
         for (voice in currentVoices) {
-//            val status by voice.status
-            Log.d(LOG_TAG, "onLoadLanguage checking ${voice.locale.isO3Language}, isDownloaded? ${voice.isDownloaded}")
+//            Log.d(LOG_TAG, "onLoadLanguage checking ${voice.locale.isO3Language}, isDownloaded? ${voice.isDownloaded}")
 
             if (voice.isDownloaded && voice.locale.isO3Language == lang) {
-                Log.d(LOG_TAG, "Known lang $lang called inside onLoadLanguage")
+//                Log.d(LOG_TAG, "Known lang $lang called inside onLoadLanguage")
 
                 return TextToSpeech.LANG_AVAILABLE
             }
@@ -112,6 +133,18 @@ class TtsService : TextToSpeechService() {
 
         return TextToSpeech.LANG_NOT_SUPPORTED
     }
+
+    override fun onLoadVoice(voiceName: String?): Int {
+        Log.d(LOG_TAG, "onLoadVoice: $voiceName")
+
+        if (voiceName in getCurrentVoices().map { h2rVoice -> h2rVoice.id})
+            return SUCCESS
+
+        Log.w(LOG_TAG, "onLoadVoice voice not found $voiceName")
+
+        return ERROR
+    }
+
 
     /**
      * Overrides [TextToSpeechService.onSynthesizeText]
@@ -128,9 +161,8 @@ class TtsService : TextToSpeechService() {
      * @param callback [SynthesisCallback] used to feed the synthesized audio
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
-        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
+//        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
-        // TODO: implement parameters such as rate, amplitude from SynthesisRequest
         val text = request.charSequenceText.toString()
         val rate = request.speechRate
         val language = request.language
@@ -138,15 +170,23 @@ class TtsService : TextToSpeechService() {
         val country = request.country
         val variant = request.variant
 
-        val ret = onIsLanguageAvailable(language, country, variant)
+//        Log.d(LOG_TAG, "onSynthesizeText: language: $language")
+
+        val ret = isLanguageAvailable(language, country, variant)
 
         if (ret == TextToSpeech.LANG_NOT_SUPPORTED) {
             callback.error()
             return
         }
 
+        // Debug code to check current thread
+//        runBlocking {
+//            launch {
+//                printCurrentDispatcher()
+//            }
+//        }
+
         var h2RVoice: H2RVoice? = null
-//        val availableVoices = runBlocking { getAvailableVoices() }
         val availableVoices = getCurrentVoices().filter{ it.isDownloaded }
 
         for (voice in availableVoices) {
@@ -161,24 +201,6 @@ class TtsService : TextToSpeechService() {
             return
         }
 
-        // TODO!: Clean up unused code in next release
-//        val assetPackLocation = assetPackManager.getPackLocation(h2RVoice.assetID) ?:  run {
-//            Log.e(LOG_TAG, "getPackLocation returned null")
-//            return
-//        }
-
-        Log.d(LOG_TAG, "Synthesis Voice found ${h2RVoice.id}")
-
-//        runBlocking {
-//            assetPackLocation.assetsPath()?.let{ loadVoiceReturn =
-//                Synthesizer.getOrLoadModel(it, foundH2RVoice)}
-//
-//        }
-
-//        assetPackLocation.assetsPath()?.let{
-//            loadVoiceReturn = Synthesizer.getOrLoadModel(foundH2RVoice)
-//        }
-
         val loadVoiceReturn: Int = Synthesizer.getOrLoadModel(h2RVoice)
 
         if (loadVoiceReturn != TextToSpeech.LANG_AVAILABLE) {
@@ -191,7 +213,6 @@ class TtsService : TextToSpeechService() {
             _curLang = Locale.Builder().setLanguage(h2RVoice.locale.language).build()
         }
 
-        // TODO?: fix sample rate
         callback.start(h2RVoice.sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
 
         if (text.isBlank() || text.isEmpty()) {
@@ -199,56 +220,62 @@ class TtsService : TextToSpeechService() {
             return
         }
 
-//        val ttsCallback: (ShortArray) -> Int = fun(shortArray: ShortArray): Int {
-//            // convert FloatArray to ByteArray
-//            val samples = shortArrayToByteArray(shortArray)
-//            val maxBufferSize: Int = callback.maxBufferSize
-//            var offset = 0
-//            while (offset < samples.size) {
-//                val bytesToWrite = maxBufferSize.coerceAtMost(samples.size - offset)
-//                callback.audioAvailable(samples, offset, bytesToWrite)
-//                offset += bytesToWrite
-//            }
-//
-//            // 1 means to continue
-//            // 0 means to stop
-//            return 1
-//        }
+        val phonemeIDArrays = Synthesizer.phonemizeAndSplit(text, h2RVoice)
 
-        val audioCallback: (ByteArray) -> Int = fun(byteArray: ByteArray): Int {
-            // convert FloatArray to ByteArray
-//            val samples = shortArrayToByteArray(shortArray)
-            val maxBufferSize: Int = callback.maxBufferSize
-            var offset = 0
-            while (offset < byteArray.size) {
-                val bytesToWrite = maxBufferSize.coerceAtMost(byteArray.size - offset)
-                callback.audioAvailable(byteArray, offset, bytesToWrite)
-                offset += bytesToWrite
-            }
-
-            // 1 means to continue
-            // 0 means to stop
-            return 1
+        if (phonemeIDArrays.isEmpty()) {
+            callback.done()
+            return
         }
 
-//        val assetPackPath = assetPackLocation.assetsPath() ?: return
+        // Android default rate scale has 100 as normal speed. Phoneme length is inverse to rate
+        val synthParams = SynthParams(h2RVoice, (100f/rate))
 
-//        runBlocking {
-//            Synthesizer.speak(text, foundH2RVoice, 50, 100, assetPackPath, audioCallback)?.join()
-//        }
+        // setup synthesis pipeline for current text
+        val pipeline = SynthesisPipeline(synthesisCallback = callback, synthParams)
+        _curPipeline.set(pipeline)
 
-        Synthesizer.speak(text, h2RVoice, 50, 100, audioCallback)
+        try {
+            _curPipeline.get()?.start(phonemeIDArrays)
+        } finally {
+            // clear pipeline reference
+//            Log.d(LOG_TAG, "Closing pipeline")
+            _curPipeline.compareAndSet(pipeline, null)
+        }
 
-        callback.done()
     }
 
+
+    /**
+     * Logging function to print current dispatcher and thread, to check where the audio callback
+     * is being called
+     *
+     */
+    suspend fun printCurrentDispatcher() {
+        val dispatcher = coroutineContext[ContinuationInterceptor]
+        Log.d(LOG_TAG,"Current Dispatcher is: $dispatcher, current thread: ${Thread.currentThread().name}")
+    }
+
+
+    /**
+     * Override [TextToSpeechService.onDestroy]. Check documentation there. Stops any synthesis
+     * pipeline if running, and stops the [ttsServiceScope] to halt TTS initialization
+     *
+     */
     override fun onDestroy() {
         // TODO?: provide way to close model and espeak in Synthesizer
         Log.d(LOG_TAG, "onDestroy: Hear2Read TTS Service")
         super.onDestroy()
+        _curPipeline.get()?.stop()
         ttsServiceScope.cancel()
     }
 
+
+    /**
+     * Override function [TextToSpeechService.onGetVoices]. Check documentation there. Note the
+     * structure of the voice data there, as opposed to [H2RVoice]
+     *
+     * @return List of voice data in the format required by Android
+     */
     override fun onGetVoices(): MutableList<Voice> {
         val returnVoices = getCurrentVoices().mapNotNull { h2rVoice ->
              if (h2rVoice.isDownloaded) {
@@ -270,43 +297,89 @@ class TtsService : TextToSpeechService() {
         return returnVoices.toMutableList()
     }
 
+
+    /**
+     * Override function [TextToSpeechService.onIsLanguageAvailable]. Check documentation there.
+     * Note lang is ISO 3 letter code.
+     *
+     * @param lang ISO 3 letter code of language
+     * @param country ISO code of country
+     * @param variant Variant name
+     * @return Returns [TextToSpeech.LANG_AVAILABLE] or [TextToSpeech.LANG_NOT_SUPPORTED] depending
+     * on whether language is available or not
+     */
      override fun onIsLanguageAvailable(lang: String?, country: String?, variant: String?): Int {
-        Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
-
-         val availableVoices = getCurrentVoices().filter { it.isDownloaded }
-
-         for (voice in availableVoices) {
-             Log.d(LOG_TAG, "onIsLangAvailable: checking: ${voice.locale.isO3Language}, ${voice.id}")
-             if (voice.locale.isO3Language == lang){ // onIsLanguageAvailable is guaranteed to have ISO3
-                 Log.i(LOG_TAG, "Known language $lang returned: $country, $variant")
-                 return TextToSpeech.LANG_AVAILABLE
-             }
-         }
-
-         return TextToSpeech.LANG_NOT_SUPPORTED
-         /*
-         return if (h2RVoices.any { h2RVoice ->
-         h2RVoice.locale.isO3Language == lang
-         }) TextToSpeech.LANG_AVAILABLE else TextToSpeech.LANG_NOT_SUPPORTED
-         */
+         Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
+         return isLanguageAvailable(lang, country, variant)
      }
 
+
+    /**
+     * Helper function implementing functionality of [onIsLanguageAvailable]
+     *
+     * @param lang ISO 3 letter code of language
+     * @param country ISO code of country
+     * @param variant Variant name
+     * @return Returns [TextToSpeech.LANG_AVAILABLE] or [TextToSpeech.LANG_NOT_SUPPORTED] depending
+     * on whether language is available or not
+     */
+    private fun isLanguageAvailable(lang: String?, country: String?, variant: String?): Int {
+
+        val availableVoices = getCurrentVoices().filter { it.isDownloaded }
+
+        for (voice in availableVoices) {
+//            Log.d(LOG_TAG, "onIsLangAvailable: checking: ${voice.locale.isO3Language}, ${voice.id}")
+            if (voice.locale.isO3Language == lang){ // onIsLanguageAvailable is guaranteed to have ISO3
+//                Log.i(LOG_TAG, "Known language $lang returned: $country, $variant")
+                return TextToSpeech.LANG_AVAILABLE
+            }
+        }
+
+        return TextToSpeech.LANG_NOT_SUPPORTED
+    }
+
+
+    /**
+     * Overriding function [TextToSpeechService.onGetLanguage]. Check documentation there
+     *
+     * @return Array of [lang ISO3 code, country code, variant]
+     */
     override fun onGetLanguage(): Array<String> {
         Log.d(LOG_TAG, "onGetLanguage")
         return arrayOf(_curLang?.isO3Language ?: "", "", "")
     }
 
+
+    /**
+     * Overriding function [TextToSpeechService.onIsValidVoiceName]. Check documentation there.
+     * The name should match [H2RVoice.id]
+     *
+     * @param voiceName
+     * @return [TextToSpeech.SUCCESS] or [TextToSpeech.ERROR] depending on if the voice name is
+     * valid or not
+     */
     override fun onIsValidVoiceName(voiceName: String?): Int {
         Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName")
         val availableVoices = getCurrentVoices().filter { it.isDownloaded }
         return if (availableVoices.any { h2RVoice: H2RVoice -> h2RVoice.id == voiceName }) {
-            Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName success")
+//            Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName success")
             TextToSpeech.SUCCESS
         } else {
             TextToSpeech.ERROR
         }
     }
 
+
+    /**
+     * Overriding function [TextToSpeechService.onGetDefaultVoiceNameFor]. Check documentation
+     * there. Finds the available [H2RVoice] whose [H2RVoice.locale.isO3Language] matches the lang
+     * parameter provided and returns the [H2RVoice.id]
+     *
+     * @param lang ISO 3 letter code of language
+     * @param country ISO code of country
+     * @param variant Variant name
+     * @return [H2RVoice.id] of voice if found, or empty string if not
+     */
     override fun onGetDefaultVoiceNameFor(
         lang: String?,
         country: String?,
@@ -317,35 +390,20 @@ class TtsService : TextToSpeechService() {
             h2RVoice.locale.isO3Language
         }
         Log.d(LOG_TAG, "onGetDefaultVoiceNameFor $lang returning : " +
-                (iso3Map[lang.toString()]?.id ?: "")
-        )
+                (iso3Map[lang.toString()]?.id ?: ""))
+
         return iso3Map[lang.toString()]?.id ?: ""
     }
 
-    override fun onStop() {
-        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
-//        Synthesizer.termeSpeak()
-        // TODO: implement close model feature in Synthesizer
-    }
 
     /**
-     * UNUSED!
-     *
-     * Converts a given short array (parameter 'audio') to a byte array using Little-Endian format.
-     * New [ByteArray] is twice the length of the [ShortArray] (since 1 Short requires 2 Bytes)
-     *
-     * @param audio [ShortArray] of the audio
-     * @return Converted [ByteArray] of the audio
+     * Overriding function [TextToSpeechService.onStop]. Check [SynthesisPipeline.stop] for
+     * implementation details
      *
      */
-//    private fun shortArrayToByteArray(audio: ShortArray): ByteArray {
-//        // byteArray is actually a ShortArray
-//        val byteArray = ByteArray(audio.size * 2)
-//        for (i in audio.indices) {
-//            val sample = audio[i].toInt()
-//            byteArray[2 * i] = sample.toByte()
-//            byteArray[2 * i + 1] = (sample shr 8).toByte()
-//        }
-//        return byteArray
-//    }
+    override fun onStop() {
+//        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
+        _curPipeline.get()?.stop()
+    }
+
 }

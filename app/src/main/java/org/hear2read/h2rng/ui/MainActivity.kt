@@ -105,4 +105,5 @@ class MainActivity : ComponentActivity() {
         tts?.stop()
         tts?.shutdown()
     }
+
 }

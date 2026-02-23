@@ -22,6 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TTSNGDemo"
         tools:targetApi="31">
+
 <!--        TODO!: theme needs to be changed to NoActionBar to remove the top black bar? Looks
                 like it is being duplicated in application and can be removed from the activity
                 https://stackoverflow.com/questions/63459487/top-of-the-screen-when-the-app-is-running-showing-a-label-with-the-app-title
@@ -44,20 +45,39 @@
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity-alias
+            android:name="InstallH2rngData"
+            android:exported="true"
+            android:targetActivity="org.hear2read.h2rng.ui.MainActivity">
+            <intent-filter>
+                <action android:name="android.speech.tts.engine.INSTALL_TTS_DATA"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="ConfigureH2rngEngine"
+            android:exported="true"
+            android:targetActivity="org.hear2read.h2rng.ui.MainActivity">
+            <intent-filter>
+                <action android:name="android.speech.tts.engine.CONFIGURE_ENGINE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity-alias>
 
         <activity
             android:name="org.hear2read.h2rng.tts.api.CheckVoiceDataActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.speech.tts.engine.CHECK_TTS_DATA" />
-
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
         <service
             android:name="org.hear2read.h2rng.tts.api.TtsService"
             android:enabled="true"
@@ -73,6 +93,7 @@
                 android:name="android.speech.tts"
                 android:resource="@xml/tts_engine" />
         </service>
+
     </application>
 
 </manifest>
