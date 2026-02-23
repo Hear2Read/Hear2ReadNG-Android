@@ -10,10 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "org.hear2read.h2rng"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.5"
+        versionCode = 12
+        versionName = "1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,9 +38,14 @@ android {
         compose = true
     }
 
-    assetPacks += listOf(":hi", ":en", ":kn", ":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
-        ":si", ":ta", ":te")
-//    assetPacks += listOf(":hin", ":pan", ":eng")
+    assetPacks += listOf(":hi", ":en", ":kn")
+
+    val enableAllVoices = providers.gradleProperty("enableAllVoices")
+    if (enableAllVoices.getOrNull() == "true") {
+        assetPacks += listOf(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
+            ":si", ":ta", ":te")
+    }
+
 }
 
 dependencies {

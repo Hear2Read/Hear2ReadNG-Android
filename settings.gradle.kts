@@ -24,13 +24,10 @@ include(":app")
 include(":hi")
 include(":en")
 include(":kn")
-include(":as")
-include(":gu")
-include(":ml")
-include(":mr")
-include(":ne")
-include(":or")
-include(":pa")
-include(":si")
-include(":ta")
-include(":te")
+
+//val enableAllVoices: String? by settings
+//if (enableAllVoices == "true") {
+val enableAllVoices = providers.gradleProperty("enableAllVoices")
+if (enableAllVoices.getOrNull() == "true") {
+    include(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":si", ":ta", ":te")
+}

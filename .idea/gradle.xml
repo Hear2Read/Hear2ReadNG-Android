@@ -11,19 +11,9 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/as" />
             <option value="$PROJECT_DIR$/en" />
-            <option value="$PROJECT_DIR$/gu" />
             <option value="$PROJECT_DIR$/hi" />
             <option value="$PROJECT_DIR$/kn" />
-            <option value="$PROJECT_DIR$/ml" />
-            <option value="$PROJECT_DIR$/mr" />
-            <option value="$PROJECT_DIR$/ne" />
-            <option value="$PROJECT_DIR$/or" />
-            <option value="$PROJECT_DIR$/pa" />
-            <option value="$PROJECT_DIR$/si" />
-            <option value="$PROJECT_DIR$/ta" />
-            <option value="$PROJECT_DIR$/te" />
           </set>
         </option>
       </GradleProjectSettings>

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--TODO: Move this to a separate activity which will delegate or be a full Activity-->
 <tts-engine xmlns:android="http://schemas.android.com/apk/res/android"
-    android:settingsActivity="org.hear2read.h2rng.MainActivity2"
+
+    android:settingsActivity="org.hear2read.h2rng.ui.MainActivity"
     >
 </tts-engine>

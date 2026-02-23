@@ -14,6 +14,7 @@ import android.speech.tts.TextToSpeech.LANG_AVAILABLE
 import android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
 import android.util.Log
 import org.hear2read.h2rng.data.H2RVoice
+import org.hear2read.h2rng.tts.SynthParams
 import org.hear2read.h2rng.utils.getFileWithExtension
 import java.lang.Float.max
 import java.nio.FloatBuffer
@@ -58,23 +59,6 @@ object Synthesizer {
 
 
     /**
-     * UNUSED!
-     *
-     * Stores the Job object of the coroutine that is loading/has loaded the ONNX model for most
-     * recently selected language
-     *
-     */
-//    private var _loadJob : Job? = null
-
-    /**
-     * UNUSED!
-     *
-     * Stores the Job object of the coroutine that is performing the actual inference and then
-     * producing the sound output.
-     */
-//    private var _speakJob : Job? = null
-
-    /**
      * Stores the [H2RVoice] object corresponding to the current voice that has been loaded
      */
     private var _curH2RVoice : H2RVoice? = null
@@ -83,6 +67,7 @@ object Synthesizer {
      * A monotonic time source, used for benchmarking the performance of various sections of code.
      */
     private val _timeSource = TimeSource.Monotonic
+
 
     /**
      * The definition of this function is provided in the dynamic library. It is responsible for
@@ -98,6 +83,7 @@ object Synthesizer {
     @JvmStatic
     external fun phonemizeWithSilence(text: String, jsonConfigPath: String) : String
 
+
     /**
      * The definition of this function is provided in the dynamic library. It initializes eSpeak
      * (used for phonemization internally) by providing the datapath to where the espeak data is
@@ -108,8 +94,10 @@ object Synthesizer {
     @JvmStatic
     external fun initeSpeak(espeakDataPath: String)
 
+
     @JvmStatic
     external fun termeSpeak()
+
 
     /**
      * This function is responsible for loading the ONNX model of the voice. It tries to locate the
@@ -122,14 +110,13 @@ object Synthesizer {
      * @param selectedH2RVoice H2RVoice object corresponding to the model file
      * @return LANG_AVAILABLE or LANG_NOT_SUPPORTED depending whether the loading was successful
      */
-    @JvmStatic
     fun getOrLoadModel(
         selectedH2RVoice: H2RVoice
     ): Int {
 
-        Log.d(
-            LOG_TAG, "getOrLoadModel: path: ${selectedH2RVoice.fileLocation}, " +
-                "voice: ${selectedH2RVoice.id}")
+//        Log.d(
+//            LOG_TAG, "getOrLoadModel: path: ${selectedH2RVoice.fileLocation}, " +
+//                "voice: ${selectedH2RVoice.id}")
         // Skip if language already loaded
         // TODO?: this may cause a problem if there's a voice update with a different ID
         if ((_curH2RVoice?.id == selectedH2RVoice.id) && (_session != null)) {
@@ -148,29 +135,7 @@ object Synthesizer {
 
         Log.d(LOG_TAG, "getOrLoadModel: AssetPack: " + modelFile.absolutePath)
 
-        // TODO!: Clean up unused code in net release
-//        try {
-//            _loadJob?.cancel()
-//        } catch (e: Exception) {
-//            Log.w(LOG_TAG,"Error canceling prev job: ${e.message}")
-//            e.printStackTrace()
-//        }
-
-//        val loadJob = CoroutineScope(Dispatchers.IO).launch {
-//        }
-
-
         try {
-//            try {
-//                _session?.close()
-//                _speakJob?.cancel()
-//            } catch (e: Exception) {
-//                Log.w(LOG_TAG, "Error closing previous session or coroutine: ${e.message}")
-//                e.printStackTrace()
-//            }
-
-            Log.d(LOG_TAG, "Current thread is ${Thread.currentThread().name}")
-
             // Not sure if this is necessary
             _session?.close()
 
@@ -178,148 +143,140 @@ object Synthesizer {
                 _env = OrtEnvironment.getEnvironment()
             }
 
-            val startGetEnv = _timeSource.markNow()
-//            val env = OrtEnvironment.getEnvironment()!!
-            val endGetEnv = _timeSource.markNow()
-            Log.d(LOG_TAG, "GetEnv took time: ${(endGetEnv - startGetEnv).toDouble(DurationUnit.MILLISECONDS)}")
-
-            val startSession = _timeSource.markNow()
+//            val startSession = _timeSource.markNow()
             _session = _env?.createSession(modelFile.absolutePath, OrtSession.SessionOptions())
-            val endSession = _timeSource.markNow()
-            Log.d(LOG_TAG, "Session took time: ${(endSession - startSession).toDouble(DurationUnit.MILLISECONDS)}")
+//            val endSession = _timeSource.markNow()
+//            Log.d(LOG_TAG, "Session took time: ${(endSession - startSession).toDouble(DurationUnit.MILLISECONDS)}")
             _curH2RVoice = selectedH2RVoice
         } catch (e: Exception) {
-            // TODO have a better fallback
+            // TODO have a better fallback?
             Log.e(LOG_TAG, "Model loading failed:  ${e.message}")
             e.printStackTrace()
             _curH2RVoice = null
         }
 
-//        _loadJob = loadJob
-        // We usually call this from onSynthesizeText(), which requires it to be blocking
-//        if (synchronous)
-//            _loadJob!!.join()
         return LANG_AVAILABLE
     }
 
+
     /**
-     * Primary function that handles text to phoneme conversion, model inference and playback.
-     * - Calls [phonemizeWithSilence] to convert the text to phoneme IDs
-     * - Uses the loaded ORT session to perform inference and get an array of audio samples
-     * - Calls callback to return the audio sample
-     * speakers
+     * Initialisation checking that the ONNX runtime environment has been set in preparation for
+     * the start of a SynthesisPipeline
+     *
+     */
+    fun initSynthesis() {
+        _env ?: kotlin.run {
+            // TODO?: frame skips observed on app startup. Optimise for multi-threading
+//          val startGetEnv = _timeSource.markNow()
+            _env = OrtEnvironment.getEnvironment()
+//          val endGetEnv = _timeSource.markNow()
+//          Log.d(LOG_TAG, "GetEnv took time: ${(endGetEnv - startGetEnv).toDouble(DurationUnit.MILLISECONDS)}")
+        }
+    }
+
+
+    /**
+     * Function handling text to phoneme conversion. Calls [phonemizeWithSilence] to convert the
+     * text to phoneme IDs, then splits them into sentences or shorter chunks if very long.
      *
      * @param text The text to be synthesized
      * @param h2RVoice H2RVoice object corresponding to the voice
-     * @param rate 1..100 represents rate of speech
-     * @param amplitude 0..100 represents volume of speech
-     * @param callback Callback to return synthesized audio
-     * @return Job associated with speaking
+     * @return List<LongArray> of arrays of phoneme IDs
      */
-    @JvmStatic
-    fun speak(
+    fun phonemizeAndSplit(
         text: String,
         h2RVoice: H2RVoice,
-        rate: Int,
-        amplitude: Int,
-//        assetPackPath: String,
-//        callback: ((shortArray : ShortArray) -> Int),
-        audioCallback: ((byteArray: ByteArray) -> Int)
-    ) {
-//        if (_loadJob == null)
-//            return null
-
-        Log.d(LOG_TAG, "Running synthesizer")
-
-//        try {
-//            _speakJob?.cancel()
-//            Log.d(LOG_TAG, "Previous speaking stopped.")
-//        } catch (e : Exception) {
-//            Log.w(LOG_TAG, "Error closing previous session or coroutine: ${e.message}")
-//            e.printStackTrace()
-//        }
-
-//        val speakJob = CoroutineScope(Dispatchers.Default).launch {
-//
-//
-//            while (! _loadJob!!.isCompleted) {
-//                // TODO: to track max time limit
-//            }
-//
-//
-//        }
-
-        _env ?: kotlin.run {
-            _env = OrtEnvironment.getEnvironment()
-        }
+    ): List<LongArray> {
 
         // Check if the voice is loaded
-        if ((_curH2RVoice?.id != h2RVoice.id) || (_session == null)) {
-            getOrLoadModel(h2RVoice)
+        getOrLoadModel(h2RVoice)
+
+        _curH2RVoice ?: run {
+            Log.e(LOG_TAG, "Unable to load voice ${h2RVoice.id}!")
+            return emptyList()
         }
 
-//        _speakJob = speakJob
-        val assetPackPath = h2RVoice.fileLocation ?: run {
+        val assetPackPath = _curH2RVoice?.fileLocation ?: run {
             Log.e(LOG_TAG, "speak: assetPackPath is null")
-            return
+            return emptyList()
         }
+
         val jsonConfigFile =
-            getFileWithExtension(assetPackPath, "json") ?: return
+            getFileWithExtension(assetPackPath, "json") ?: return emptyList()
 //            val jsonConfigFile = File(context.filesDir, langToFile[selectedLanguage]!! + ".json")
 
         //            Log.d(LOG_TAG, "Model file is ${modelFile.isFile()}")
-        Log.d(LOG_TAG,"Config file is ${jsonConfigFile.isFile}")
+//        Log.d(LOG_TAG,"Config file is ${jsonConfigFile.isFile}")
         //            Log.d(LOG_TAG, isDirectoryPathValid(context.filesDir.absolutePath))
 
-        val startEspeak = _timeSource.markNow()
+//        val startEspeak = _timeSource.markNow()
         val outputTextToPhonemes = phonemizeWithSilence(text, jsonConfigFile.absolutePath)
-        val endEspeak = _timeSource.markNow()
-        Log.d(LOG_TAG, "Espeak took time: ${(endEspeak - startEspeak).toDouble(DurationUnit.MILLISECONDS)}")
+//        val endEspeak = _timeSource.markNow()
+//        Log.d(LOG_TAG, "Espeak took time: ${(endEspeak - startEspeak).toDouble(DurationUnit.MILLISECONDS)}")
 
-        // TODO?: frame skips observed on app startup. Optimise for multi-threading
-        val startGetEnv = _timeSource.markNow()
-//            val env = OrtEnvironment.getEnvironment()!!
-        val endGetEnv = _timeSource.markNow()
-        Log.d(LOG_TAG, "GetEnv took time: ${(endGetEnv - startGetEnv).toDouble(DurationUnit.MILLISECONDS)}")
 
-        Log.d(LOG_TAG, "outputTextToPhonemes: $outputTextToPhonemes")
+//        Log.d(LOG_TAG, "outputTextToPhonemes: $outputTextToPhonemes")
+//        Log.d(LOG_TAG, "outputTextToPhonemes length: ${outputTextToPhonemes.length}")
 
-        val startRep = _timeSource.markNow()
-        val phonemeIdsArr = outputTextToPhonemes
-            //                .replace(";", ",")
-            //                .replace(" ", ",")
-            //                .replace("\t", ",")
-            //                .replace("\n", ",") // normalise text first into a common delimiter
-            .split(",")
-            .filter { it.isNotBlank() } // filter out empty tokens
-            .map { it.toLong() }
-            .toLongArray()
-        val endRep = _timeSource.markNow()
-        Log.d(LOG_TAG, "Replacement took time: ${(endRep - startRep).toDouble(DurationUnit.MILLISECONDS)}")
+        val sentenceList = outputTextToPhonemes
+            .split(";") // sentence array
+            .filter { it.isNotBlank() } // filter out empty sentences
+            .map {
+                it
+                    .split(",") // split each sentence by comma to get token(s)
+                    .filter { token -> token.isNotBlank() } // remove empty token(s)
+                    .map { token -> token.toLong() } // typecast each token to Long
+//                    .toLongArray() // convert the iterable into Kotlin LongArray
+            }
 
-        //            Log.d(LOG_TAG, phonemeIdsArr.toString())
+//        Log.d(LOG_TAG, "sentenceList lengths: ${sentenceList.map { s-> s.size }}")
 
-        val startInputPrep = _timeSource.markNow()
+        // Split sentences in list and convert to LongArrays
+        var shortSentenceList = emptyList<LongArray>()
+        for (sentence in sentenceList) {
+            shortSentenceList += splitLongText(sentence)
+        }
+
+//        Log.d(LOG_TAG, "shortSentenceList lengths: ${shortSentenceList.map { s-> s.size }}")
+
+        return shortSentenceList
+    }
+
+
+    /**
+     * Function running inference on voice model to generate audio from phoneme IDs. Most
+     * computationally heavy part of the code, is usually run in background
+     *
+     * @param phonemeIdsArr LongArray of phoneme IDs of the text that needs to be synthesised
+     * @param synthParams [SynthParams] relevant to the synthesis
+     * @return ByteArray of raw WAV audio
+     */
+    fun inferFromPhonemeIDs(
+        phonemeIdsArr: LongArray,
+        synthParams: SynthParams, ) : ByteArray {
+
+        // Check if the voice is loaded
+        val voiceLoaded = getOrLoadModel(synthParams.h2RVoice)
+        if (voiceLoaded < 0) {
+            Log.e(LOG_TAG, "Unable to load voice: ${synthParams.h2RVoice.id}")
+            return ByteArray(0)
+        }
+
+        // TODO: load scalesArr values from JSON
+        // TODO?: use sonic (https://github.com/waywardgeek/sonic) instead to manipulate speech?
+        val scalesArr = floatArrayOf(0.667f, synthParams.phonemeLength, 0.8f)
+
+        val scales = FloatBuffer.wrap(scalesArr)
+        val scalesShape = longArrayOf(scalesArr.size.toLong())
+        val speakerID = LongBuffer.wrap(longArrayOf(0))
+        val speakerIDShape = longArrayOf(1)
+
         val phonemeIds = LongBuffer.wrap(phonemeIdsArr)
         val phonemeIdsShape = longArrayOf(1, phonemeIdsArr.size.toLong())
 
         val phonemeIdsLengthsArr = longArrayOf(phonemeIdsArr.size.toLong())
         val phonemeIdsLengths = LongBuffer.wrap(phonemeIdsLengthsArr)
         val phonemeIdLengthsShape = longArrayOf(phonemeIdsLengthsArr.size.toLong())
-
-        // TODO: even verify if it is the correct way to control speed
-        // TODO: safely handle phonemeLenScale values out of bounds
-        var phonemeLenScale: Float = (1.0f / (((rate.toFloat() - 50.0f) / 25.0f) + 1.0f))
-        if (rate < 50) {
-            phonemeLenScale = (1.0f / (((rate.toFloat()) / 75.0f) + (1.0f / 3.0f)))
-        }
-
-        // TODO: load scalesArr values from JSON
-        val scalesArr = floatArrayOf(0.667f, phonemeLenScale, 0.8f)
-        val scales = FloatBuffer.wrap(scalesArr)
-        val scalesShape = longArrayOf(scalesArr.size.toLong())
-        val speakerID = LongBuffer.wrap(longArrayOf(0))
-        val speakerIDShape = longArrayOf(1)
 
         val ortInputs = mutableMapOf(
             "input" to OnnxTensor.createTensor(_env, phonemeIds, phonemeIdsShape),
@@ -330,21 +287,19 @@ object Synthesizer {
             ),
             "scales" to OnnxTensor.createTensor(_env, scales, scalesShape),
         )
-        if (h2RVoice.isMultiSpeaker) {
+        if (synthParams.h2RVoice.isMultiSpeaker) {
             ortInputs["sid"] = OnnxTensor.createTensor(_env, speakerID, speakerIDShape)
         }
-        val endInputPrep = _timeSource.markNow()
-        Log.d(LOG_TAG, "Input prep took time: ${(endInputPrep - startInputPrep).toDouble(DurationUnit.MILLISECONDS)}")
 
         try {
             val start = _timeSource.markNow()
             _session?.run(ortInputs)?.use { results ->
                 val end = _timeSource.markNow()
                 val inferenceTimeMillis = (end - start).toDouble(DurationUnit.MILLISECONDS)
-                Log.d(LOG_TAG, "ORT took time: $inferenceTimeMillis ms")
+//                    Log.d(LOG_TAG, "ORT took time: $inferenceTimeMillis ms")
 
                 val outputTensor =
-                    results.get(0) as OnnxTensor // Since output map will have only one node which is called "output"
+                    results.get(0) as OnnxTensor // Output map will have only one node: "output"
                 val outputShape: LongArray = outputTensor.info.shape as LongArray
                 val outputBuffer = outputTensor.floatBuffer
 
@@ -363,7 +318,7 @@ object Synthesizer {
 
                 // TODO: discuss if it is the correct and preferred way
                 // TODO: handle amplitude out of bounds
-                val audioScale = MAX_WAV_VALUE * (amplitude.toFloat() / 100.0f) / max(
+                val audioScale = MAX_WAV_VALUE * (synthParams.amplitude.toFloat() / 100.0f) / max(
                     0.01f,
                     maxAudioValue
                 ) // 0.01f to avoid division by zero
@@ -382,23 +337,86 @@ object Synthesizer {
                         Short.MAX_VALUE.toFloat()
                     ).toInt()
 
-                    byteArray[2*i] = (intVal).toByte()
-                    byteArray[2*i + 1] = (intVal shr 8).toByte()
+                    byteArray[2 * i] = (intVal).toByte()
+                    byteArray[2 * i + 1] = (intVal shr 8).toByte()
                 }
 
                 val realTimeMillis = audioCount.toDouble() * 1000.0 / 22500.0
-                Log.d(LOG_TAG,"Real time: $realTimeMillis ms")
+                Log.d(LOG_TAG, "Real time: $realTimeMillis ms")
 
-                Log.d(LOG_TAG,"Inference ratio: ${inferenceTimeMillis / realTimeMillis}")
+                Log.d(LOG_TAG, "Inference ratio: ${inferenceTimeMillis / realTimeMillis}")
 
 //                callback(shortArray)
-                audioCallback(byteArray)
+//                audioCallback(byteArray)
+                return byteArray
             }
         } catch (e: Exception) {
-            Log.e(LOG_TAG,"Exception ${e.message} has occurred.")
+            Log.e(LOG_TAG, "Exception ${e.message} has occurred.")
             e.printStackTrace()
         }
+        return ByteArray(0)
+    }
 
-//        return _speakJob
+
+    /**
+     * Splits long text to more manageable portions to ensure quicker response time. The returned
+     * elements are all smaller than 300 phoneme IDs long
+     *
+     * @param sentence List<Long> of phoneme IDs to be split into reasonable chunks
+     * @return List<LongArray> of split phoneme ID arrays
+     */
+    private fun splitLongText(sentence: List<Long>): List<LongArray> {
+        val unpaddedSentence = sentence.drop(2).dropLast(2)
+        return splitLongTextRec(unpaddedSentence)
+    }
+
+
+    /**
+     * Recursive function actually implementing [splitLongText]
+     *
+     * @param sentence The phonemeID list to split
+     * @param accum The accumulator of tail recursive call
+     * @return List<LongArray> of split phoneme ID arrays
+     */
+    tailrec private fun splitLongTextRec(
+        sentence: List<Long>,
+        accum: List<LongArray> = emptyList()
+    ): List<LongArray> {
+
+        var senCopy = sentence
+
+        // Drop 0 padding
+        if (senCopy.first() == 0L) senCopy = senCopy.drop(1)
+        if (senCopy.last() == 0L) senCopy = senCopy.dropLast(1)
+
+        val startPadding = listOf(1L, 0L)
+        val endPadding = listOf(0L, 1L)
+
+        return if (senCopy.size < 300) {
+            accum + listOf((startPadding+senCopy+endPadding).toLongArray())
+        }
+        else {
+            // ensuring minimum size of split element to be 100 and not too small
+            var firstN = 200
+            // Split at non padding element
+            if (senCopy[199] == 0L) {
+                firstN = 199
+            }
+            var first = senCopy.take(firstN)
+            var rest = senCopy.drop(firstN)
+
+            // Find the first space to ensure split at word level
+            var spaceIndex = rest.indexOf(3L)
+            // Fallback in the very unlikely case there is no space left
+            if (spaceIndex < 0)
+                spaceIndex = rest.indexOf(0L) + 1
+
+            first += rest.take(spaceIndex + 1)
+            rest = rest.drop(spaceIndex + 1)
+
+            val newAccum = accum + listOf((startPadding+first+endPadding).toLongArray())
+
+            splitLongTextRec(rest, newAccum)
+        }
     }
 }

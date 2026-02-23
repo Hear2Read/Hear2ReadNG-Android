@@ -38,7 +38,9 @@ data class H2RVoice(
     val fileSize: Long = 0, // in bytes
     val fileLocation: String? = null,
     val downloadedBytes: Long = 0L, // bytes downloaded so far
-    val downloadProgress: Float = 0f // 0.0 to 1.0){}
+    val downloadProgress: Float = 0f, // 0.0 to 1.0){}
+    val assetAvailable: Boolean = true  // used for testing builds where all assets may not be
+                                        // available
 ){
     val assetID = id.split('-')[0]
     val locale = Locale.Builder().setLanguage(assetID).build()
