@@ -9,6 +9,7 @@ import com.google.android.play.core.assetpacks.AssetPackManager
 import org.hear2read.h2rng.ui.screens.VoiceManagerScreen
 import org.hear2read.h2rng.ui.screens.TTSDemoScreen
 import org.hear2read.h2rng.ui.screens.LanguageSelectionScreen
+import java.io.File
 import java.util.Locale
 
 /**
@@ -25,7 +26,8 @@ fun AppNavigation(
     navController: NavHostController,
     getTTS: () -> TextToSpeech?,
     setTTS: (TextToSpeech?) -> Unit,
-    assetPackManager: AssetPackManager
+    assetPackManager: AssetPackManager,
+    filesDir: File
 ) {
     NavHost(
         navController = navController,
@@ -57,7 +59,8 @@ fun AppNavigation(
         composable("install_voices") {
             VoiceManagerScreen(
                 navController = navController,
-                assetPackManager = assetPackManager
+                assetPackManager = assetPackManager,
+                filesDir = filesDir
             )
         }
     }

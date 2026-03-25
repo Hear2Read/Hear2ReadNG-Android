@@ -56,6 +56,11 @@ object H2RVoiceRepository {
 //                locale = Locale.Builder().setLanguage("as").build()
             ),
             H2RVoice(
+//                assetID = "bn",
+                id = "bn-v0-tdilmale-1905val-alpha-low",
+//                locale = Locale.Builder().setLanguage("as").build()
+            ),
+            H2RVoice(
 //                assetID = "en",
                 id = "en-mono-us",
 //                locale = Locale.Builder().setLanguage("en").build()
@@ -104,6 +109,12 @@ object H2RVoiceRepository {
 //                assetID = "pa",
                 id = "pa-v4-tdil-1419-low",
 //                locale = Locale.Builder().setLanguage("en").build()
+            ),
+            H2RVoice(
+//                assetID = "sa",
+                id = "sa-v0-tdilv0-2214val-low",
+//                locale = Locale.Builder().setLanguage("en").build()
+                // TODO: check sample sentence
             ),
             H2RVoice(
 //                assetID = "si",

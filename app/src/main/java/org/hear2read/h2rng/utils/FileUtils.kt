@@ -2,9 +2,14 @@ package org.hear2read.h2rng.utils
 
 import android.content.Context
 import android.util.Log
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 
 // Constants for the lag tag
 private val FILENAME = "FileUtils"
@@ -51,6 +56,7 @@ fun copyAssets(context: Context, path: String) {
     val assets: Array<String>?
     try {
         assets = context.assets.list(path)
+        Log.d(LOG_TAG,"Checking assets at $path, found: $assets")
         if (assets!!.isEmpty()) {
             copyFile(context, path)
         } else {
@@ -104,4 +110,48 @@ fun getFileWithExtension(directory: String, extension: String) : File? {
     }
 
     return null
+}
+
+/**
+ * Unzip wavs to directory specified. Based on https://stackoverflow.com/a/64294854
+ *
+ * @param zipFile
+ * @param wavDir
+ */
+fun unzipWavs(zipFile : File, wavDir : File) {
+    Log.d(LOG_TAG, "unzipWavs: $zipFile to $wavDir")
+    ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { inStream ->
+        if (wavDir.exists() && !wavDir.isDirectory) {
+//            throw IllegalStateException("wavDir file must be directory or not exist")
+            Log.e(LOG_TAG, "wavDir file must be directory or not exist")
+            wavDir.delete()
+            }
+
+        if (!wavDir.isDirectory) wavDir.mkdirs()
+
+        val wavDirPath = wavDir.absolutePath.let {
+            if (!it.endsWith(File.separator)) "$it${File.separator}"
+            else it
+        }
+
+        var zipEntry: ZipEntry?
+        var unzipFile: File
+        var unzipParentDir: File?
+
+        while (inStream.nextEntry.also { zipEntry = it } != null) {
+            unzipFile = File(wavDirPath + zipEntry!!.name)
+            if (zipEntry!!.isDirectory) {
+                Log.d(LOG_TAG, "unzipWavs: directory $zipEntry")
+                if (!unzipFile.isDirectory) unzipFile.mkdirs()
+            } else {
+                unzipParentDir = unzipFile.parentFile
+                if (unzipParentDir != null && !unzipParentDir.isDirectory) {
+                    unzipParentDir.mkdirs()
+                }
+                BufferedOutputStream(FileOutputStream(unzipFile)).use { outStream ->
+                    inStream.copyTo(outStream)
+                }
+            }
+        }
+    }
 }

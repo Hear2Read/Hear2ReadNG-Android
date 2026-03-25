@@ -26,6 +26,7 @@ import org.hear2read.h2rng.tts.api.H2RPackUpdateListener
 import org.hear2read.h2rng.ui.components.VoiceDownloadItem
 import org.hear2read.h2rng.ui.theme.AppColors
 import org.hear2read.h2rng.data.H2RVoiceRepository
+import java.io.File
 
 /**
  * Voice manager screen to download and delete voices. Contains a list of
@@ -40,7 +41,8 @@ import org.hear2read.h2rng.data.H2RVoiceRepository
 @Composable
 fun VoiceManagerScreen(
     navController: NavController,
-    assetPackManager: AssetPackManager
+    assetPackManager: AssetPackManager,
+    filesDir: File
 ) {
     // Observe voices from repository
     val voices by H2RVoiceRepository.voices.collectAsState()
@@ -48,7 +50,7 @@ fun VoiceManagerScreen(
 
     // Register listener for progress updates
     DisposableEffect(Unit) {
-        val listener = H2RPackUpdateListener(assetPackManager)
+        val listener = H2RPackUpdateListener(assetPackManager, filesDir)
         assetPackManager.registerListener(listener)
 
         onDispose {

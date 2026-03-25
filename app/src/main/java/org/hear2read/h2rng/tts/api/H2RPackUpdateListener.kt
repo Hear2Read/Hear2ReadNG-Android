@@ -1,5 +1,7 @@
 package org.hear2read.h2rng.tts.api
 
+import android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
+import android.util.Log
 import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.AssetPackState
 import com.google.android.play.core.assetpacks.AssetPackStateUpdateListener
@@ -9,13 +11,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.hear2read.h2rng.data.H2RVoiceRepository
+import org.hear2read.h2rng.utils.getFileWithExtension
+import org.hear2read.h2rng.utils.unzipWavs
+import java.io.File
 
 /**
  * Listener that updates [H2RVoiceRepository] when asset pack states change. This is used to
  * automatically update progress in the UI
  *
+ * @property filesDir Location of the directory to unzip additional voice data (wavs) to
+ * @constructor
+ *
+ * @param assetPackManager AssetPackManager instance to fetch asset packs
  */
-class H2RPackUpdateListener(assetPackManager: AssetPackManager) : AssetPackStateUpdateListener {
+class H2RPackUpdateListener(assetPackManager: AssetPackManager, private val filesDir: File)
+    : AssetPackStateUpdateListener {
     // Create a coroutine scope for updating repository from callbacks
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val packManager = assetPackManager
@@ -57,6 +67,11 @@ class H2RPackUpdateListener(assetPackManager: AssetPackManager) : AssetPackState
                         size = state.totalBytesToDownload(),
                         filePath = filePath
                     )
+                    val wavFile = getFileWithExtension(filePath.toString(), "onnx.zip") ?: run {
+//                        Log.e(LOG_TAG, "getOrLoadModel: getFileWithExtension returned null")
+                        return@launch
+                    }
+                    unzipWavs(wavFile, filesDir)
                 }
 
                 AssetPackStatus.FAILED -> {

@@ -72,7 +72,8 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     getTTS = { tts },
                     setTTS = { tts = it },
-                    assetPackManager = assetPackManager
+                    assetPackManager = assetPackManager,
+                    filesDir = filesDir
                 )
             }
         }

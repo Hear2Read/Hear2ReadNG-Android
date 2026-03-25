@@ -9,10 +9,6 @@ package org.hear2read.h2rng.tts.api
 
 import android.database.ContentObserver
 import android.media.AudioFormat
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import android.provider.Settings
 import android.speech.tts.SynthesisCallback
 import android.speech.tts.SynthesisRequest
 import android.speech.tts.TextToSpeech
@@ -30,9 +26,8 @@ import kotlinx.coroutines.launch
 import org.hear2read.h2rng.Hear2ReadNGApplication
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
-import org.hear2read.h2rng.Synthesizer
-import org.hear2read.h2rng.tts.SynthParams
-import org.hear2read.h2rng.tts.SynthesisPipeline
+import org.hear2read.h2rng.tts.H2RNGCallback
+import org.hear2read.h2rng.tts.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
 import org.hear2read.h2rng.utils.copyDataDir
 import java.util.Locale
@@ -44,7 +39,7 @@ import kotlin.coroutines.coroutineContext
  * [TextToSpeechService] implementation for the Hear2ReadNG TTS synthesiser
  *
  */
-class TtsService : TextToSpeechService() {
+class TtsService : TextToSpeechService(), H2RNGCallback {
     private val LOG_TAG = "H2RNG_" + TtsService::class.simpleName
 
     /**
@@ -62,10 +57,10 @@ class TtsService : TextToSpeechService() {
      */
     private var _curRate: Int = 100
 
-    /**
-     * Stores thread safe reference to current pipeline
+    /***
+     * Stores current SynthesisCallback
      */
-    private val _curPipeline = AtomicReference<SynthesisPipeline?>(null)
+    private var _callback: SynthesisCallback? = null
 
     /**
      * Settings observer to check system TTS language change
@@ -99,7 +94,9 @@ class TtsService : TextToSpeechService() {
 //        populateSizes()
 
         // TODO!: check if this is being copied each time
-        Synthesizer.initeSpeak(copyDataDir(this, "espeak-ng-data"))
+        copyDataDir(this, "espeak-ng-data")
+        Synthesizer.init(filesDir.absolutePath, this)
+//        Synthesizer.init(copyDataDir(this, "espeak-ng-data"), this)
     }
 
 
@@ -163,8 +160,11 @@ class TtsService : TextToSpeechService() {
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
 //        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
+        _callback = callback
+
         val text = request.charSequenceText.toString()
-        val rate = request.speechRate
+        val rate = request.speechRate / 100f
+        val pitch = request.pitch / 100f
         val language = request.language
         val langISO2 = if (language.length==3) iso3ToIso2Map[language] else language
         val country = request.country
@@ -178,13 +178,6 @@ class TtsService : TextToSpeechService() {
             callback.error()
             return
         }
-
-        // Debug code to check current thread
-//        runBlocking {
-//            launch {
-//                printCurrentDispatcher()
-//            }
-//        }
 
         var h2RVoice: H2RVoice? = null
         val availableVoices = getCurrentVoices().filter{ it.isDownloaded }
@@ -220,27 +213,7 @@ class TtsService : TextToSpeechService() {
             return
         }
 
-        val phonemeIDArrays = Synthesizer.phonemizeAndSplit(text, h2RVoice)
-
-        if (phonemeIDArrays.isEmpty()) {
-            callback.done()
-            return
-        }
-
-        // Android default rate scale has 100 as normal speed. Phoneme length is inverse to rate
-        val synthParams = SynthParams(h2RVoice, (100f/rate))
-
-        // setup synthesis pipeline for current text
-        val pipeline = SynthesisPipeline(synthesisCallback = callback, synthParams)
-        _curPipeline.set(pipeline)
-
-        try {
-            _curPipeline.get()?.start(phonemeIDArrays)
-        } finally {
-            // clear pipeline reference
-//            Log.d(LOG_TAG, "Closing pipeline")
-            _curPipeline.compareAndSet(pipeline, null)
-        }
+        Synthesizer.synthesize(text, speed = rate, pitch = pitch, volume = 100, charMode = false )
 
     }
 
@@ -265,8 +238,9 @@ class TtsService : TextToSpeechService() {
         // TODO?: provide way to close model and espeak in Synthesizer
         Log.d(LOG_TAG, "onDestroy: Hear2Read TTS Service")
         super.onDestroy()
-        _curPipeline.get()?.stop()
+//        _curPipeline.get()?.stop()
         ttsServiceScope.cancel()
+        Synthesizer.terminate()
     }
 
 
@@ -397,13 +371,78 @@ class TtsService : TextToSpeechService() {
 
 
     /**
-     * Overriding function [TextToSpeechService.onStop]. Check [SynthesisPipeline.stop] for
-     * implementation details
+     * Overriding function [TextToSpeechService.onStop].
      *
      */
     override fun onStop() {
-//        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
-        _curPipeline.get()?.stop()
+        // TODO: need to stop synthesis somehow
+        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
+//        _curPipeline.get()?.stop()
+//        Synthesizer.terminate()
+    }
+
+    /**
+     * Implementing interface function for audio callback
+     *
+     * @param samples
+     */
+    override fun onAudio(samples: ShortArray) {
+        Log.d(LOG_TAG, "onAudioo length ${samples.size}")
+        val byteArray = ByteArray(samples.size * Short.SIZE_BYTES)
+        for (i in 0 until samples.size) {
+            val intVal = samples[i].toInt()
+
+            byteArray[2 * i] = (intVal).toByte()
+            byteArray[2 * i + 1] = (intVal shr 8).toByte()
+        }
+        feedAudioToCallback(byteArray)
+    }
+
+    /**
+     * Function to feed audio to the [SynthesisCallback] completely.
+     *
+     * @param audioData The raw audio data in bytes to be fed to the [SynthesisCallback]
+     * @return 1 if completed, 0 if interrupted
+     */
+    private fun feedAudioToCallback(audioData: ByteArray): Int {
+        Log.d(LOG_TAG, "Feeding audio length ${audioData.size}")
+        _callback?.let {  }
+        val maxBufferSize = _callback?.maxBufferSize?: 0
+        var offset = 0
+
+        while (offset < audioData.size) {
+            val chunkSize = minOf(maxBufferSize, audioData.size - offset)
+//            Log.d(LOG_TAG, "Feeding chunk at $offset, chunk $chunkSize")
+            val written = _callback?.audioAvailable(
+                audioData,
+                offset,
+                chunkSize
+            )?:-1
+            if (written < 0) return 0
+            offset += chunkSize
+        }
+//        Log.d(LOG_TAG, "Exiting feedAudioCallback, offset: $offset, ")
+
+        return 1
+    }
+
+    /**
+     * Callback function when synthesis is completed
+     *
+     */
+    override fun onDone() {
+        Log.d(LOG_TAG, "onDone")
+        _callback?.done()
+    }
+
+    /**
+     * Callback function when index is reached
+     *
+     * @param index
+     */
+    override fun onIndexReached(index: Int) {
+//        TODO("Not yet implemented")
+        Log.d(LOG_TAG, "onIndexReached $index")
     }
 
 }

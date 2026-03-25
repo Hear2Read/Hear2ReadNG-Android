@@ -12,19 +12,24 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.9"
+        versionCode = 14
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
 
+
+    }
     buildTypes {
         release {
+            ndk {
+                abiFilters.add("arm64-v8a") // Specify the architectures you need
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
         }
     }
     compileOptions {
@@ -38,12 +43,16 @@ android {
         compose = true
     }
 
-    assetPacks += listOf(":hi", ":en", ":kn")
+    assetPacks += listOf(":en")
+//    assetPacks += listOf(":hi", ":kn")
+    assetPacks += listOf(":bn", ":kn")
 
     val enableAllVoices = providers.gradleProperty("enableAllVoices")
     if (enableAllVoices.getOrNull() == "true") {
-        assetPacks += listOf(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa",
-            ":si", ":ta", ":te")
+        assetPacks += listOf(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":si", ":ta", ":te",
+            ":hi"
+//        ":sa", ":bn"
+        )
     }
 
 }
@@ -67,7 +76,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.onnxruntime.android)
+//    implementation(libs.onnxruntime.android)
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.asset.delivery)
