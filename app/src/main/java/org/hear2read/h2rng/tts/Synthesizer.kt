@@ -10,14 +10,18 @@ package org.hear2read.h2rng.tts
 import android.speech.tts.TextToSpeech.LANG_AVAILABLE
 import android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
 import android.util.Log
+import androidx.annotation.Keep
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.utils.getFileWithExtension
+import java.io.File
 
 /**
  * Callback interface to receive audio and index reached callbacks from the engine
  *
  * @constructor Create empty H2RNGCallback
  */
+// TODO: remove redundant Keep annotation (relevant proguard rules are present)
+@Keep
 interface H2RNGCallback {
     fun onAudio(samples: ShortArray)
     fun onIndexReached(index: Int)
@@ -73,8 +77,10 @@ object Synthesizer {
             return LANG_NOT_SUPPORTED
         }
 
-        val modelFile = getFileWithExtension(assetLocation, "onnx") ?: run {
-            Log.e(LOG_TAG, "getOrLoadModel: getFileWithExtension returned null")
+        val modelFile = File(assetLocation, "${selectedH2RVoice.id}.onnx")
+        val configFile = File(assetLocation, "${selectedH2RVoice.id}.onnx.json")
+        if(!modelFile.isFile or !configFile.isFile) {
+            Log.e(LOG_TAG, "getOrLoadModel: couldn't find corresponding files: ${selectedH2RVoice.id}")
             return LANG_NOT_SUPPORTED
         }
 
@@ -83,6 +89,7 @@ object Synthesizer {
             setVoice(selectedH2RVoice.id, assetLocation)
             _curH2RVoice = selectedH2RVoice
         } catch (e: Exception) {
+            Log.e(LOG_TAG, "getOrLoadModel: setVoice failed: ${e.message}")
             _curH2RVoice = null
             return LANG_NOT_SUPPORTED
         }
@@ -91,8 +98,14 @@ object Synthesizer {
 
     }
 
+
+    @Keep
     external fun init(dataPath: String, callback: H2RNGCallback): Int
+
+    @Keep
     external fun setVoice(voiceName: String, dataPath: String): Int
+
+    @Keep
     external fun synthesize(
         text: String,   // TODO? create class corresponding to SynthRequest struct?
         speed: Float,
@@ -100,5 +113,7 @@ object Synthesizer {
         volume: Int,
         charMode: Boolean
     ): Int
+
+    @Keep
     external fun terminate()
 }

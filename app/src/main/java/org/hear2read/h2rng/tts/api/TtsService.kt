@@ -17,6 +17,7 @@ import android.speech.tts.TextToSpeech.SUCCESS
 import android.speech.tts.TextToSpeechService
 import android.speech.tts.Voice
 import android.util.Log
+import androidx.annotation.Keep
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -89,12 +90,6 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
             }
         }
 
-//        assetPackManager = AssetPackManagerFactory.getInstance(application)
-//        runBlocking{ populateSizes(assetPackManager) }
-//        populateSizes()
-
-        // TODO!: check if this is being copied each time
-        copyDataDir(this, "espeak-ng-data")
         Synthesizer.init(filesDir.absolutePath, this)
 //        Synthesizer.init(copyDataDir(this, "espeak-ng-data"), this)
     }
@@ -386,6 +381,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      *
      * @param samples
      */
+    @Keep
     override fun onAudio(samples: ShortArray) {
         Log.d(LOG_TAG, "onAudioo length ${samples.size}")
         val byteArray = ByteArray(samples.size * Short.SIZE_BYTES)
@@ -430,6 +426,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * Callback function when synthesis is completed
      *
      */
+    @Keep
     override fun onDone() {
         Log.d(LOG_TAG, "onDone")
         _callback?.done()
@@ -440,6 +437,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      *
      * @param index
      */
+    @Keep
     override fun onIndexReached(index: Int) {
 //        TODO("Not yet implemented")
         Log.d(LOG_TAG, "onIndexReached $index")

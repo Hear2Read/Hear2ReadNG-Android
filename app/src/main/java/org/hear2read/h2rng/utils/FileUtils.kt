@@ -11,18 +11,20 @@ import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
+import org.hear2read.h2rng.BuildConfig
+
 // Constants for the lag tag
 private val FILENAME = "FileUtils"
 private val LOG_TAG = "H2RNG_${FILENAME}"
 
 /**
  * Helper to copy asset file to internal storage
- * TODO: we are only using the asset path as returned by the AssetManager so this is not useful
+ * TODO: remove
  *
- * @param context [Context] to access the asset file TODO: replace with path
+ * @param context [Context] to access the asset file
  * @param filename Name of the file to be copied
  */
-fun copyFile(context: Context, filename: String) {
+fun copyAssetFile(context: Context, filename: String) {
     try {
         val istream = context.assets.open(filename)
         val newFilename = context.filesDir.absolutePath + "/" + filename
@@ -45,32 +47,64 @@ fun copyFile(context: Context, filename: String) {
     }
 }
 
+fun copyAssetFile(context: Context, filename: String, overWrite: Boolean): String {
+    val destFile = File(context.filesDir, filename)
+
+    if (destFile.exists() && !overWrite) return destFile.absolutePath  // already extracted, skip
+
+    Log.d(LOG_TAG, "copyAssetFile $filename, to: $destFile.absolutePath")
+
+    context.assets.open(filename).use { input ->
+        destFile.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    return destFile.absolutePath
+}
+
+fun copyAssetsRecur(context: Context, path: String, overWrite: Boolean): Boolean {
+    val assets: Array<String>?
+    assets = context.assets.list(path)
+    Log.d(LOG_TAG, "Checking assets at $path, found: $assets")
+    var success = true
+    try {
+        if (assets!!.isEmpty()) {
+            Log.d(LOG_TAG, "Asset is a file: $path")
+            copyAssetFile(context, path, overWrite)
+        } else {
+            val fullPath = "${context.filesDir.absolutePath}/$path"
+            Log.d(LOG_TAG, "Making dir $fullPath")
+            val dir = File(fullPath)
+            dir.mkdirs()
+            for (asset in assets.iterator()) {
+                Log.d(LOG_TAG, "Recursing on $asset")
+                val p: String = if (path == "") "" else "$path/"
+                success = success and copyAssetsRecur(context, p + asset, overWrite)
+            }
+        }
+        return success
+    } catch (ex: IOException) {
+        Log.e(LOG_TAG,"Failed to copy asset $path: ${ex.message}")
+        return false
+    }
+}
+
 /**
  * Copy assets to internal storage? Not sure what this is doing, seems only for the data assets
- * TODO: we are only using the asset path as returned by the AssetManager so this is not useful?
  *
  * @param context [Context] used to access filesystem
  * @param path Path of asset folder
  */
 fun copyAssets(context: Context, path: String) {
-    val assets: Array<String>?
-    try {
-        assets = context.assets.list(path)
-        Log.d(LOG_TAG,"Checking assets at $path, found: $assets")
-        if (assets!!.isEmpty()) {
-            copyFile(context, path)
-        } else {
-            val fullPath = "${context.filesDir.absolutePath}/$path"
-            val dir = File(fullPath)
-            dir.mkdirs()
-            for (asset in assets.iterator()) {
-                val p: String = if (path == "") "" else "$path/"
-                copyAssets(context, p + asset)
-            }
-        }
-    } catch (ex: IOException) {
-        Log.e(LOG_TAG,"Failed to copy asset $path: ${ex.message}")
-    }
+    val currentVersion = BuildConfig.VERSION_CODE
+    val prefs = context.getSharedPreferences("asset_versions", Context.MODE_PRIVATE)
+    val extractedVersion = prefs.getInt("current_version", -1)
+    val overWrite = extractedVersion != currentVersion
+
+    val success = copyAssetsRecur(context, path, overWrite)
+
+    if (success)
+        prefs.edit().putInt("current_version", currentVersion).apply()
 }
 
 /**
@@ -91,6 +125,7 @@ fun copyDataDir(context: Context, dataDir: String): String {
 
 /**
  * Get file in directory with the extension provided
+ * TODO: remove redundant - directly check file as we know the name
  *
  * @param directory The directory to search
  * @param extension The extension to match
@@ -115,8 +150,8 @@ fun getFileWithExtension(directory: String, extension: String) : File? {
 /**
  * Unzip wavs to directory specified. Based on https://stackoverflow.com/a/64294854
  *
- * @param zipFile
- * @param wavDir
+ * @param zipFile file to unzip
+ * @param wavDir dir to unzip to
  */
 fun unzipWavs(zipFile : File, wavDir : File) {
     Log.d(LOG_TAG, "unzipWavs: $zipFile to $wavDir")

@@ -288,7 +288,7 @@ object H2RVoiceRepository {
     }
 
     /**
-     * Remove a voice by ID
+     * Remove a voice by asset pack ID
      */
     suspend fun removeVoice(assetID: String) = mutex.withLock {
         _voices.update { currentVoices ->

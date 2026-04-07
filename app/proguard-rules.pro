@@ -19,3 +19,18 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
+
+# Keep the H2RNGCallback interface and all its methods
+-keep interface org.hear2read.h2rng.tts.H2RNGCallback {
+    *;
+}
+# Keep H2RNGCallback implementations
+#-keep class * implements org.hear2read.h2rng.tts.H2RNGCallback {
+#    void onAudio(short[]);
+#    void onDone();
+#    void onIndexReached(int);
+#}
+# This rule only keeps the implemented methods
+-keep class * implements org.hear2read.h2rng.tts.H2RNGCallback

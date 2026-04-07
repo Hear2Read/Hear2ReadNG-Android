@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Hear2Read NG</string>
-    <string name="tts_label">Hear2Read</string>
+    <string name="tts_label">Hear2Read NG</string>
     <string name="eng_sample">This is a sample English sentence for the Hear2Read synthesizer.</string>
 
     <string name="asm_sample">অসমীয়া ভাষা হৈছে সকলোতকৈ পূৰ্বীয় ভাৰতীয়-আৰ্য ভাষা।</string>
