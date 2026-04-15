@@ -8,6 +8,8 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/vcs.xml
+/.idea/deploymentTargetSelector.xml
 .DS_Store
 /build
 /captures
@@ -16,10 +18,13 @@
 local.properties
 .onnx
 .onnx.json
-app/release
+app/**/release
 **/build/
 **/assets/*
 *.apk
 *.apks
 *.aab
 *.logcat
+.idea/deploymentTargetSelector.xml
+.idea/vcs.xml
+.idea/vcs.xml

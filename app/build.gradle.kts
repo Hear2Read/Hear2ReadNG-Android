@@ -19,8 +19,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 35
-        versionCode = 14
-        versionName = "2.0"
+        versionCode = 15
+        versionName = "2.1"
         ndkVersion = ndkVer
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -172,7 +172,9 @@ androidComponents {
             // Testing build for phone
             Triple("local", "static", "debug"),
             // Testing build for emulator
-            Triple("local", "shared", "debug")
+            Triple("local", "shared", "debug"),
+            // Testing build for sideloading
+            Triple("local", "static", "release")
         )
 
         val currentVariant = Triple(delivery, stl, buildType)

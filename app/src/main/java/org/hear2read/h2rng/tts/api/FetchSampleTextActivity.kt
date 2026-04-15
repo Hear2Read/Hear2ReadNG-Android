@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import org.hear2read.h2rng.tts.getSampleText
 import java.util.Locale
 
 /**
@@ -19,19 +20,20 @@ class FetchSampleTextActivity : Activity() {
     /**
      * Helper to retrieve the sample text from the resources. Uses deprecated reflection to access
      * the sample corresponding to the language instead of hardcoded conditionals
-     * TODO: Fix this
      *
      * @param lang The 2 letter ISO code of the language
      * @return The sample text corresponding the language
      */
     private fun getSampleTextData(lang: String) : String {
         val iso3lang = Locale.Builder().setLanguage(lang).build().isO3Language
-        val resourceName = "${iso3lang}_sample"
-        Log.d(LOG_TAG, "Resource name: $resourceName")
+//        val resourceName = "${iso3lang}_sample"
+//        Log.d(LOG_TAG, "Resource name: $resourceName")
         // TODO: replace with hardcoded conditionals
-        val resId = this.resources.getIdentifier(resourceName, "string", this.packageName)
+//        val resId = this.resources.getIdentifier(resourceName, "string", this.packageName)
 
-        val sampleText = if (resId != 0) this.getString(resId) else "Some random sample text."
+//        val sampleText = if (resId != 0) this.getString(resId) else "Some random sample text."
+        val sampleText = getSampleText(this, iso3lang)
+
         Log.d(LOG_TAG, sampleText)
         return sampleText
     }
