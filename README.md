@@ -19,7 +19,7 @@ binaries and other artifacts to be built successfully. These are:
   
   Please refer to the h2r-ng project docs for additional requirements specific to that project. The
   main requirement for **_static_** builds is that the ONNX Runtime \(ORT\) needs to be built before
-  running the Android build, and the env variable ORT_LOCAL_PATH . See
+  running the Android build, and the env variable `ORT_LOCAL_PATH` . See
   [Build Flavours](#build-flavours) for further details regarding **_static_** and
   **_shared_** builds.
 - The espeak-ng dictionary data, present within a espeak-ng-data dir at `/app/src/main/assets/`.
