@@ -117,6 +117,8 @@ fun initializeTTS(
                 // TODO return onInitialized in this case as well, modify with taking a bool arg
                 onError()
             } else {
+                tts.setSpeechRate(1.0f)
+                tts.setPitch(1.0f)
                 setupUtteranceListener(tts, onInitialized)
 //                val dummySentence = getDummySentence(lang)
                 val dummySentence = ""
@@ -265,7 +267,7 @@ fun getSampleText(context: Context, languageCode: String): String {
 
     val sampleText = when (languageCode) {
         "asm" -> context.resources.getString(R.string.asm_sample)
-//        "ben" -> context.resources.getString(R.string.ben_sample)
+        "ben" -> context.resources.getString(R.string.ben_sample)
         "guj" -> context.resources.getString(R.string.guj_sample)
         "hin" -> context.resources.getString(R.string.hin_sample)
         "kan" -> context.resources.getString(R.string.kan_sample)
@@ -276,8 +278,8 @@ fun getSampleText(context: Context, languageCode: String): String {
         "pan" -> context.resources.getString(R.string.pan_sample)
         "san" -> context.resources.getString(R.string.san_sample)
         "sin" -> context.resources.getString(R.string.sin_sample)
-        "tel" -> context.resources.getString(R.string.tel_sample)
         "tam" -> context.resources.getString(R.string.tam_sample)
+        "tel" -> context.resources.getString(R.string.tel_sample)
         "eng" -> context.resources.getString(R.string.eng_sample)
         else -> "Unknown language"
     }
@@ -303,7 +305,7 @@ fun getDemoText(context: Context, languageCode: String): String {
 
     val sampleText = when (languageCode) {
         "asm" -> context.resources.getString(R.string.asm_demo)
-//        "ben" -> context.resources.getString(R.string.ben_demo)
+        "ben" -> context.resources.getString(R.string.ben_demo)
         "guj" -> context.resources.getString(R.string.guj_demo)
         "hin" -> context.resources.getString(R.string.hin_demo)
         "kan" -> context.resources.getString(R.string.kan_demo)

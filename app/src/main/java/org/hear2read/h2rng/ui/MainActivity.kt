@@ -9,10 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.google.android.play.core.assetpacks.AssetPackManager
-import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.hear2read.h2rng.BuildConfig
 import org.hear2read.h2rng.Hear2ReadNGApplication
 import org.hear2read.h2rng.tts.TTS_NAME
 
@@ -27,11 +26,8 @@ class MainActivity : ComponentActivity() {
     val LOG_TAG = "H2RNG_" + MainActivity::class.simpleName
     /**
      * tts: The [TextToSpeech] that is used throughout all the screens in the activity
-     * assetPackManager The AssetPackManager instance that is used throughout the activity to
-     * access and download voices
      */
     private var tts: TextToSpeech? = null
-    private lateinit var assetPackManager: AssetPackManager
     private var isTTSReady = false
 //    private var isRepoSynced = false
 
@@ -44,9 +40,6 @@ class MainActivity : ComponentActivity() {
         // Keep the splash screen visible until TTS is ready
         // TODO: this doesn't stop the setContent so that is delayed in a slightly hacky fashion
         splashScreen.setKeepOnScreenCondition { !(isTTSReady /*&& isRepoSynced*/)}
-
-        // Initialize AssetPackManager
-        assetPackManager = AssetPackManagerFactory.getInstance(this)
 
         val app = application as Hear2ReadNGApplication
 
@@ -71,8 +64,7 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(
                     navController = navController,
                     getTTS = { tts },
-                    setTTS = { tts = it },
-                    assetPackManager = assetPackManager
+                    setTTS = { tts = it }
                 )
             }
         }
@@ -85,7 +77,6 @@ class MainActivity : ComponentActivity() {
      */
     private fun initializeBasicTTS() {
         Log.d(LOG_TAG, "initializeBasicTTS()")
-//        runBlocking { populateSizes(assetPackManager) }
         tts = TextToSpeech(this, { status ->
             if (status == TextToSpeech.SUCCESS) {
                 // TTS initialized successfully
@@ -97,7 +88,7 @@ class MainActivity : ComponentActivity() {
                 Log.e(LOG_TAG, "TTS initialization failure!")
                 isTTSReady = true // TODO show error
             }
-        }, TTS_NAME)
+        }, BuildConfig.APPLICATION_ID)
     }
 
     override fun onDestroy() {

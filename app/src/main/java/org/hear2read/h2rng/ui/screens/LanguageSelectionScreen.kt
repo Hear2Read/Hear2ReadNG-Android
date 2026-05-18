@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import org.hear2read.h2rng.ui.components.GlobalTopBar
 import org.hear2read.h2rng.ui.components.LanguageListItem
+import org.hear2read.h2rng.ui.components.VoiceManagerBtnProvider
 import org.hear2read.h2rng.ui.theme.AppColors
 import java.util.Locale
 
@@ -69,30 +70,7 @@ fun LanguageSelectionScreen(
                 navController.navigateUp()
             }
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onInstallVoiceClick,
-                containerColor = Color.White,
-                modifier = Modifier.semantics {
-                    contentDescription = "Install voice button. Opens screen to install additional TTS voices."
-                }
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 8.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = AppColors.surfaceColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "ADD VOICES",
-                        fontSize = 20.sp,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                }
-            }
-        }
+        floatingActionButton = { VoiceManagerBtnProvider.get().floatingButton(onInstallVoiceClick) }
     ) { paddingValues ->
         Box(
             modifier = Modifier

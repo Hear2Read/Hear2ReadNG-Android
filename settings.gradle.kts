@@ -21,13 +21,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "Hear2ReadNG Android"
 include(":app")
-include(":hi")
 include(":en")
+include(":bn")
 include(":kn")
-
-//val enableAllVoices: String? by settings
-//if (enableAllVoices == "true") {
-val enableAllVoices = providers.gradleProperty("enableAllVoices")
-if (enableAllVoices.getOrNull() == "true") {
-    include(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":si", ":ta", ":te")
-}
+include(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":si", ":ta", ":te",
+    ":hi"
+)

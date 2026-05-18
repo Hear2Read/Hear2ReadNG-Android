@@ -21,15 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import org.hear2read.h2rng.tts.getSampleText
+import org.hear2read.h2rng.tts.initializeTTS
+import org.hear2read.h2rng.tts.playSentence
 import org.hear2read.h2rng.ui.components.GlobalTopBar
 import org.hear2read.h2rng.ui.components.LoadingDialog
 import org.hear2read.h2rng.ui.components.MediaControlButtons
 import org.hear2read.h2rng.ui.components.ResponseTimeCard
 import org.hear2read.h2rng.ui.components.TextInputSection
 import org.hear2read.h2rng.ui.theme.AppColors
-import org.hear2read.h2rng.tts.getSampleText
-import org.hear2read.h2rng.tts.initializeTTS
-import org.hear2read.h2rng.tts.playSentence
 import org.hear2read.h2rng.utils.splitIntoSentences
 import java.util.Locale
 
