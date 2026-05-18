@@ -39,39 +39,43 @@ require some modifications to the app build.gradle file, as well as to the CMake
 h2r-ng project. This unfortunately means that only x86 emulators are supported for now\).
 
 The flavour dimensions, with the associated flavours, are:
-- **delivery**: This points to whether the voices are to be delivered locally or through PAD. Given
-  the differences in the API for these two, this is a nontrivial disparity requiring separate
-  source sets. The flavours are:
-  - **_pad_**: This is the production flavour, using PAD delivery, and expecting the voice files for
-    all 14 languages. This ends up being quite massive \(~1GB\), which is why the JVM heap size has
-    been increased to 4GB in the gradle.properties file.
-  - **_padsmall_**: A more manageable variant of the **_pad_** build, with only a few language files
-    required \(currently, English, Bengali and Kannada, but this can be changed easily by modifying
-    the relevant portion in the app build.gradle file\). Otherwise identical to the **_pad_**
-    flavour.
-  - **_local_**: This flavour delivers the voices through the typical assets path. The voice files
-    to be included for this flavour need to be placed in the `app/src/local/assets/Voices`
-    Additionally, the prerecorded wav files of the letters needs to be placed in the relevant
-    `app/src/local/assets/wavs/<voice ISO2 code>` directory, if required. The wav files need to be
-    plain, and not zipped together. This variant has its own `applicationIdSuffix`, `".local"`,
-    which means that it can be installed alongside one of the PAD builds on the same device.
-- **stl**: This encompasses the two STL's that will be used, depending on whether the engine has
-  ORT linked statically or dynamically. Android expects static builds by default, which allow for a
-  single library \(.so file\) per build \(and per ABI\). Multiple binaries are only allowed in the
-  shared STL, which will additionally require Android's `libc++_shared.so` to be shipped with the
-  app. Thankfully, these modifications don't need to be done manually since we are using ndk-build.
-  Since ORT doesn't support x86 and armv7 Android NDK builds, we provide support for these through
-  dynamic linking alone \(the ORT .so file is pulled from the official Maven release in this case\).
-  See the _h2r-ng_ project README for more details. The flavours associated with this dimension are:
-  - **_static_**: The flavour used in production. Additionally, given the limitations of CMake in
-    Android, this flavour only support the arm64 ABI, and conversely, arm64 is only supported in
-    this flavour. We have consciously decided to not support 32 bit builds for production, given the
-    low prevalence as well as the inherently lower compute capacity of such devices. This flavour
-    requires an ORT static build, as described above
-    \([External Requirements](#external-requirements)\).
-  - **_shared_**: This flavour is used for testing on x86 emulators, as well as testing on armv7
-    devices, if you want to for some reason. The advantage of this build is that it doesn't require
-    ORT to be built, so it can be used as an initial test to make sure things are working fine.
+
+### delivery:
+This points to whether the voices are to be delivered locally or through PAD. Given
+the differences in the API for these two, this is a nontrivial disparity requiring separate
+source sets. The flavours are:
+- **_pad_**: This is the production flavour, using PAD delivery, and expecting the voice files for
+  all 14 languages. This ends up being quite massive \(~1GB\), which is why the JVM heap size has
+  been increased to 4GB in the gradle.properties file.
+- **_padsmall_**: A more manageable variant of the **_pad_** build, with only a few language files
+  required \(currently, English, Bengali and Kannada, but this can be changed easily by modifying
+  the relevant portion in the app build.gradle file\). Otherwise identical to the **_pad_**
+  flavour.
+- **_local_**: This flavour delivers the voices through the typical assets path. The voice files
+  to be included for this flavour need to be placed in the `app/src/local/assets/Voices`
+  Additionally, the prerecorded wav files of the letters needs to be placed in the relevant
+  `app/src/local/assets/wavs/<voice ISO2 code>` directory, if required. The wav files need to be
+  plain, and not zipped together. This variant has its own `applicationIdSuffix`, `".local"`,
+  which means that it can be installed alongside one of the PAD builds on the same device.
+
+### stl:
+This encompasses the two STL's that will be used, depending on whether the engine has
+ORT linked statically or dynamically. Android expects static builds by default, which allow for a
+single library \(.so file\) per build \(and per ABI\). Multiple binaries are only allowed in the
+shared STL, which will additionally require Android's `libc++_shared.so` to be shipped with the
+app. Thankfully, these modifications don't need to be done manually since we are using ndk-build.
+Since ORT doesn't support x86 and armv7 Android NDK builds, we provide support for these through
+dynamic linking alone \(the ORT .so file is pulled from the official Maven release in this case\).
+See the _h2r-ng_ project README for more details. The flavours associated with this dimension are:
+- **_static_**: The flavour used in production. Additionally, given the limitations of CMake in
+  Android, this flavour only support the arm64 ABI, and conversely, arm64 is only supported in
+  this flavour. We have consciously decided to not support 32 bit builds for production, given the
+  low prevalence as well as the inherently lower compute capacity of such devices. This flavour
+  requires an ORT static build, as described above
+  \([External Requirements](#external-requirements)\).
+- **_shared_**: This flavour is used for testing on x86 emulators, as well as testing on armv7
+  devices, if you want to for some reason. The advantage of this build is that it doesn't require
+  ORT to be built, so it can be used as an initial test to make sure things are working fine.
 
 ### Allowed Variants
 
