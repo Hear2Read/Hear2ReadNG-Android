@@ -63,9 +63,9 @@ object Synthesizer {
         selectedH2RVoice: H2RVoice
     ): Int {
 
-//        Log.d(
-//            LOG_TAG, "getOrLoadModel: path: ${selectedH2RVoice.fileLocation}, " +
-//                "voice: ${selectedH2RVoice.id}")
+        Log.d(
+            LOG_TAG, "getOrLoadModel: path: ${selectedH2RVoice.fileLocation}, " +
+                "voice: ${selectedH2RVoice.id}")
         // Skip if language already loaded
         // TODO?: this may cause a problem if there's a voice update with a different ID
         if (_curH2RVoice?.id == selectedH2RVoice.id) {

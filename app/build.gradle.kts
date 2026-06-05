@@ -10,6 +10,7 @@ plugins {
 
 val h2rngDir: String = gradleLocalProperties(rootDir, providers).getProperty("h2rng.dir")
 val ndkVer: String = gradleLocalProperties(rootDir, providers).getProperty("ndk.version")
+val ortbuildDir: String = gradleLocalProperties(rootDir, providers).getProperty("ortbuild.dir")
 
 android {
     namespace = "org.hear2read.h2rng"
@@ -88,6 +89,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments += "-DANDROID_STL=c++_static"
+                    arguments += "-DORT_BUILD_DIR=${ortbuildDir}"
                 }
             }
         }

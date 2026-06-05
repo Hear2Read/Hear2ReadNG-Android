@@ -1,1 +1,6 @@
 /build
+/release
+/localStatic
+/padsmallStatic
+/padStatic
+/.cxx

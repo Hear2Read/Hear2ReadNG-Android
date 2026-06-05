@@ -10,19 +10,22 @@ binaries and other artifacts to be built successfully. These are:
   files. These are to be placed in their respective `<lang ISO2 code>/src/main/assets/`
   directories. However, this location, as well as the number of voices required will change for
   non production variants. See [Build Flavours](#build-flavours) below for further details.
-- The h2r-ng engine binary. This is automatically built and included using ndk-build, but the source
-  code needs to be present and pointed to in the root local.properties file. Ensure the following
+- The **h2r-ng** engine binary. This is automatically built and included using ndk-build, but the source
+  code needs to be present and pointed to in the root `local.properties` file. Ensure the following
   properties are present:
   - `sdk.dir=<Android SDK dir>`
   - `ndk.version=<version code of the installed NDK, tested with 30.0.14904198>`
   - `h2rng.dir=<location of the h2r-ng project folder>`
+
+  Additionally, if doing a _**static**_ build, ONNX Runtime \(ORT\) needs to be built before
+  running the Android build, and the following property pointing to the ONNX Runtime \(ORT\) build
+  directory needs to be present in local.properties:
+  - `ortbuild.dir=<ORT build root dir>`
   
-  Please refer to the h2r-ng project docs for additional requirements specific to that project. The
-  main requirement for **_static_** builds is that the ONNX Runtime \(ORT\) needs to be built before
-  running the Android build, and the env variable `ORT_LOCAL_PATH` . See
+  Please refer to the _h2r-ng_ project docs for additional requirements specific to that project. See
   [Build Flavours](#build-flavours) for further details regarding **_static_** and
   **_shared_** builds.
-- The espeak-ng dictionary data, present within a espeak-ng-data dir at `/app/src/main/assets/`.
+- The **espeak-ng** dictionary data, present within a espeak-ng-data dir at `/app/src/main/assets/`.
   This contains the relevant phonetic data required to convert text to phonemes.
 
 ## Build Flavours
@@ -31,12 +34,12 @@ This project uses Android's Play Asset Delivery \(PAD\) to deliver the voice fil
 demand. However, testing with PAD delivery makes for a tedious iteration cycle. To deal with this,
 the project build comes in several variants, combining multiple flavours and flavour dimensions.
 
-Additionally, building ORT statically with Android NDK is only supported for arm64. If it needs to
-be tested on an emulator, which typically requires x86 or x64, we will need to link ORT
+Additionally, building ORT statically with Android NDK is only supported for `arm64`. If it needs to
+be tested on an emulator, which typically requires `x86` or `x64`, we will need to link ORT
 dynamically. This has additional repercussions for the C++ STL used in the NDK build as well. 
-\(_**Note**_: Although x64 is mentioned here, it is not supported or tested yet. Adding support will
-require some modifications to the app build.gradle file, as well as to the CMake files for the
-h2r-ng project. This unfortunately means that only x86 emulators are supported for now\).
+\(_**Note**_: Although `x64` is mentioned here, it is not supported or tested yet. Adding support
+will require some modifications to the app build.gradle file, as well as to the CMake files for the
+_h2r-ng_ project. This unfortunately means that only `x86` emulators are supported for now\).
 
 The flavour dimensions, with the associated flavours, are:
 
@@ -64,16 +67,16 @@ ORT linked statically or dynamically. Android expects static builds by default, 
 single library \(.so file\) per build \(and per ABI\). Multiple binaries are only allowed in the
 shared STL, which will additionally require Android's `libc++_shared.so` to be shipped with the
 app. Thankfully, these modifications don't need to be done manually since we are using ndk-build.
-Since ORT doesn't support x86 and armv7 Android NDK builds, we provide support for these through
+Since ORT doesn't support `x86` and `armv7` Android NDK builds, we provide support for these through
 dynamic linking alone \(the ORT .so file is pulled from the official Maven release in this case\).
 See the _h2r-ng_ project README for more details. The flavours associated with this dimension are:
 - **_static_**: The flavour used in production. Additionally, given the limitations of CMake in
-  Android, this flavour only support the arm64 ABI, and conversely, arm64 is only supported in
+  Android, this flavour only supports the `arm64` ABI, and conversely, `arm64` is only supported in
   this flavour. We have consciously decided to not support 32 bit builds for production, given the
   low prevalence as well as the inherently lower compute capacity of such devices. This flavour
-  requires an ORT static build, as described above
+  requires an **ORT static build**, as described above
   \([External Requirements](#external-requirements)\).
-- **_shared_**: This flavour is used for testing on x86 emulators, as well as testing on armv7
+- **_shared_**: This flavour is used for testing on `x86` emulators, as well as testing on `armv7`
   devices, if you want to for some reason. The advantage of this build is that it doesn't require
   ORT to be built, so it can be used as an initial test to make sure things are working fine.
 
@@ -86,7 +89,7 @@ only 5 variants are allowed and shown:
 - **padStaticRelease**: The production build.
 - **padsmallStaticRelease**: The testing version of the production build with fewer voices.
 - **localStaticDebug**: Debug static build, can be run on a phone.
-- **localSharedDebug**: Debug shared build, can be run on a x86 emulator.
+- **localSharedDebug**: Debug shared build, can be run on a `x86` emulator.
 - **localStaticRelease**: Testing build to be used when sharing the app for sideloading.
 
 

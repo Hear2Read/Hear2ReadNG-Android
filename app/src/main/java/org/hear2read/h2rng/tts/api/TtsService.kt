@@ -30,9 +30,7 @@ import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
 import org.hear2read.h2rng.tts.H2RNGCallback
 import org.hear2read.h2rng.tts.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
-import org.hear2read.h2rng.utils.copyDataDir
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.coroutineContext
 
@@ -153,7 +151,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @param callback [SynthesisCallback] used to feed the synthesized audio
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
-//        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
+        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
         _callback = callback
 
