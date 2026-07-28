@@ -41,10 +41,6 @@ import org.hear2read.h2rng.ui.theme.AppColors
  *
  * @param isPlaying mutableState<boolean> that signals if TTS is playing or not
  * @param hasText mutableState<boolean> that signals if the input text is empty or not
- * @param hasPrevious mutableState<boolean> that signals if the current sentence being played has
- * a sentence before it
- * @param hasNext mutableState<boolean> that signals if the current sentence being played has
- * a sentence after it
  * @param onPlayPause Function to be called on play/pause button being clicked
  * @param onPrevious Function to be called on previous button being clicked
  * @param onNext Function to be called on next button being clicked
@@ -54,8 +50,6 @@ import org.hear2read.h2rng.ui.theme.AppColors
 fun MediaControlButtons(
     isPlaying: Boolean,
     hasText: Boolean,
-    hasPrevious: Boolean,
-    hasNext: Boolean,
     onPlayPause: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
@@ -88,21 +82,22 @@ fun MediaControlButtons(
                 // Previous Button
                 IconButton(
                     onClick = onPrevious,
-                    enabled = hasPrevious,
+//                    enabled = hasPrevious,
                     modifier = Modifier
                         .size(56.dp)
                         .semantics {
-                            contentDescription = if (hasPrevious) {
+                            contentDescription = //if (hasPrevious) {
                                 "Previous sentence button"
-                            } else {
-                                "Previous sentence button, disabled"
-                            }
+//                            } else {
+//                                "Previous sentence button, disabled"
+//                            }
                         }
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
                         contentDescription = null,
-                        tint = if (hasPrevious) AppColors.buttonBackgroundColor else AppColors.buttonDisabledColor,
+//                        tint = if (hasPrevious) AppColors.buttonBackgroundColor else AppColors.buttonDisabledColor,
+                        tint = AppColors.buttonBackgroundColor,
                         modifier = Modifier.size(36.dp)
                     )
                 }
@@ -133,21 +128,22 @@ fun MediaControlButtons(
                 // Next Button
                 IconButton(
                     onClick = onNext,
-                    enabled = hasNext,
+//                    enabled = hasNext,
                     modifier = Modifier
                         .size(56.dp)
                         .semantics {
-                            contentDescription = if (hasNext) {
+                            contentDescription = //if (hasNext) {
                                 "Next sentence button"
-                            } else {
-                                "Next sentence button, disabled"
-                            }
+//                            } else {
+//                                "Next sentence button, disabled"
+//                            }
                         }
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = null,
-                        tint = if (hasNext) AppColors.buttonBackgroundColor else AppColors.buttonDisabledColor,
+//                        tint = if (hasNext) AppColors.buttonBackgroundColor else AppColors.buttonDisabledColor,
+                        tint = AppColors.buttonBackgroundColor,
                         modifier = Modifier.size(36.dp)
                     )
                 }

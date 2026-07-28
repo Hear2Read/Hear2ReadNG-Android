@@ -35,6 +35,7 @@ import org.hear2read.h2rng.ui.components.GlobalTopBar
 import org.hear2read.h2rng.ui.components.LanguageListItem
 import org.hear2read.h2rng.ui.components.VoiceManagerBtnProvider
 import org.hear2read.h2rng.ui.theme.AppColors
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import java.util.Locale
 
 /**
@@ -54,13 +55,15 @@ import java.util.Locale
 @Composable
 fun LanguageSelectionScreen(
     navController: NavHostController,
-    getTTS: () -> TextToSpeech?,
+//    getTTS: () -> TextToSpeech?,
+    onGetAvailableLanguages: () -> List<Locale>,
     onLanguageSelected: (Locale) -> Unit,
     onInstallVoiceClick: () -> Unit
 ) {
-    val LOG_TAG = "H2RNG_" + "LanguageSelectionScreen"
-    val availableLangs = getTTS()?.availableLanguages?.toList()?.sortedBy { it.displayLanguage }
-        ?: emptyList()
+    val LOG_TAG = LOG_PREFIX + "LanguageSelectionScreen"
+//    val availableLangs = getTTS()?.availableLanguages?.toList()?.sortedBy { it.displayLanguage }
+//        ?: emptyList()
+    val availableLangs = onGetAvailableLanguages()
 
     Log.d(LOG_TAG, "availableLangs: $availableLangs")
 

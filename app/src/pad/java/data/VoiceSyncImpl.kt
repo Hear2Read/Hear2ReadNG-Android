@@ -28,6 +28,14 @@ class VoiceSyncImpl: VoiceSync {
             // Adding a try/catch block as all voice packs may not be included in the build while
             // testing locally
             try {
+                // Check if location exists: this doesn't need internet connection and ensures that
+                // downloaded packs are available offline
+                val packPath = assetPackManager.getPackLocation(pack)?.assetsPath()
+                if (packPath != null) {
+                    H2RVoiceRepository.updateDownloadInfo(pack, true, 0L,
+                        packPath)
+                    continue
+                }
                 val packStates = assetPackManager.requestPackStates(listOf(pack))
                 val packState = packStates.packStates()[pack]
                 Log.d(LOG_TAG,
@@ -35,6 +43,8 @@ class VoiceSyncImpl: VoiceSync {
 
                 if (packState != null) {
                     // TODO: Check for other error codes?
+                    Log.d(LOG_TAG,
+                        "syncDownloadStates: packstate error code: ${packState.errorCode()}")
                     if (packState.errorCode() == AssetPackErrorCode.PACK_UNAVAILABLE) {
                         Log.w(LOG_TAG, "AssetPack $pack not found! Deleting from repository")
                         H2RVoiceRepository.removeVoice(pack)
@@ -59,6 +69,7 @@ class VoiceSyncImpl: VoiceSync {
             catch (e: AssetPackException) {
                 Log.w(LOG_TAG,
                     "Error obtaining asset pack information, check internet: ${e.message}")
+                H2RVoiceRepository.removeVoice(pack)
             }
             catch (e: Exception) {
                 Log.w(LOG_TAG,

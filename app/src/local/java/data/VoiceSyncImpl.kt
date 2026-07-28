@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import org.hear2read.h2rng.data.H2RVoiceRepository
 import org.hear2read.h2rng.data.VoiceSync
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import org.hear2read.h2rng.utils.copyAssets
 import java.io.File
 
@@ -13,7 +14,7 @@ import java.io.File
  * device storage
  */
 class VoiceSyncImpl: VoiceSync {
-    val LOG_TAG = "H2RNG_"+"VoiceSyncImplLocal"
+    val LOG_TAG = LOG_PREFIX + "VoiceSyncImplLocal"
     override suspend fun syncVoiceStates(context: Context) {
         // get voice locations and populate repository
         // get wav locations and add to voice data struct
@@ -42,7 +43,7 @@ class VoiceSyncImpl: VoiceSync {
                 val voiceFilePath = File(voiceDir, onnxFile).absolutePath
                 H2RVoiceRepository.updateDownloadInfo(voice.assetID,
                                                  true,
-                                                        0,
+                                                        0L,
                                                              voiceDir.absolutePath)
             }
 

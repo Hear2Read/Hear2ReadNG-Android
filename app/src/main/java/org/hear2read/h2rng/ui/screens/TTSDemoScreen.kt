@@ -1,6 +1,5 @@
 package org.hear2read.h2rng.ui.screens
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,27 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import org.hear2read.h2rng.tts.getSampleText
-import org.hear2read.h2rng.tts.initializeTTS
-import org.hear2read.h2rng.tts.playSentence
 import org.hear2read.h2rng.ui.components.GlobalTopBar
 import org.hear2read.h2rng.ui.components.LoadingDialog
 import org.hear2read.h2rng.ui.components.MediaControlButtons
 import org.hear2read.h2rng.ui.components.ResponseTimeCard
 import org.hear2read.h2rng.ui.components.TextInputSection
 import org.hear2read.h2rng.ui.theme.AppColors
-import org.hear2read.h2rng.utils.splitIntoSentences
-import java.util.Locale
+import org.hear2read.h2rng.utils.LOG_PREFIX
 
 /**
  * Screen to demo the Hear2ReadNG TTS. Configured based on the language. Displays an text input
@@ -42,101 +30,42 @@ import java.util.Locale
  * waits until it returns, in order to ensure that the language is loaded. A loading dialog is
  * displayed until this process is completed
  *
- * @param langLocale [Locale] of the language, expected to be constructed using the ISO 2 letter
- * code
  * @param navController [NavHostController] associated with the activity to navigate to and from
  * the screen
- * @param getTTS Function to access the single TTS instance created in the [MainActivity]
- * @param setTTS Function to set the single TTS instance TODO: try to remove this redundancy
+ * @param text Text to be read and displayed
+ * @param isVoiceReady Signals whether TTS is ready with voice
+ * @param playingIndex If not null, reading and value is index of sentence being read. If
+ *          null, not reading text
+ * @param responseTime Time taken to start playback of audio from button click
+ * @param onPlaySentence Plays the sentence at index passed in, through the TTS
+ * @param onStop Stops TTS playback
+ * @param onUpdateText Called when text is updated
  */
 @Composable
 fun TTSDemoScreen(
-    langLocale: Locale,
     navController: NavHostController,
-    getTTS: () -> TextToSpeech?,
-    setTTS: (TextToSpeech?) -> Unit
+    text: String,
+    isVoiceReady: Boolean,
+    playingIndex: Int?,
+    responseTime: Long?,
+    onPlaySentence: (index: Int) -> Unit,
+    onStop: () -> Unit,
+    onUpdateText: (text: String) -> Unit
 ) {
-    val context = LocalContext.current
-    var isLoading by remember { mutableStateOf(true) }
-    var currentText by remember { mutableStateOf(getSampleText(context, langLocale.isO3Language)) }
-    var sentences by remember { mutableStateOf(splitIntoSentences(currentText)) }
-    var currentSentenceIndex by remember { mutableIntStateOf(0) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var responseTime by remember { mutableStateOf<Long?>(null) }
-    var playStartTime by remember { mutableStateOf<Long?>(null) }
 
-    /**
-     * Helper function used to capture the behaviour when a sentence is to be played back. Used
-     * when the play button is pressed as well as when the previous or next button are pressed.
-     * Plays the current sentence and queues the next sentence when the current sentence has
-     * completed playback. TODO: queue before without flushing to enable continous playback?
-     *
-     */
-    fun onPlay(){
-        val tts = getTTS()
-        if (sentences.isNotEmpty() && currentSentenceIndex < sentences.size) {
-            playStartTime = System.currentTimeMillis()
-            responseTime = null
-            playSentence(
-                tts = tts,
-                sentence = sentences[currentSentenceIndex],
-                index = currentSentenceIndex,
-                onStart = {
-                    playStartTime?.let { startTime ->
-                        if (responseTime == null)
-                            responseTime = System.currentTimeMillis() - startTime
-                    }
-                },
-                onComplete = {
-                    if (currentSentenceIndex < sentences.size - 1) {
-                        currentSentenceIndex++
-                        playSentence(
-                            tts = tts,
-                            sentence = sentences[currentSentenceIndex],
-                            index = currentSentenceIndex,
-                            onStart = {},
-                            onComplete = {
-                                if (currentSentenceIndex >= sentences.size - 1) {
-                                    isPlaying = false
-                                }
-                            }
-                        )
-                    } else {
-                        isPlaying = false
-                    }
-                }
-            )
-            isPlaying = true
-        }
-
-    }
-
-    // Initialize TTS
-    LaunchedEffect(langLocale) {
-        initializeTTS(
-            context = context,
-            langLocale = langLocale,
-            getTTS = getTTS,
-            setTTS = setTTS,
-            onInitialized = { isLoading = false },
-            onError = {
-                isLoading = false
-                // TODO: Handle error
-            }
-        )
-    }
+    val LOG_TAG = LOG_PREFIX + "TTSDemoScreen"
 
     // Cleanup on navigation away
     DisposableEffect(Unit) {
         onDispose {
-            getTTS()?.stop()
+            onStop()
         }
     }
 
     Scaffold(
         topBar = {
             GlobalTopBar("Text to Speech Demo") {
-                getTTS()?.stop()
+                onStop()
                 navController.navigateUp()
             }
         }
@@ -159,12 +88,9 @@ fun TTSDemoScreen(
 
                 // Text Input Section
                 TextInputSection(
-                    text = currentText,
+                    text = text,
                     onTextChange = { newText ->
-                        currentText = newText
-                        sentences = splitIntoSentences(newText)
-                        currentSentenceIndex = 0
-                        responseTime = null
+                        onUpdateText(newText)
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -173,56 +99,33 @@ fun TTSDemoScreen(
 
                 // Media Control Buttons
                 MediaControlButtons(
-                    isPlaying = isPlaying,
-                    hasText = currentText.isNotBlank(),
-                    hasPrevious = currentSentenceIndex > 0,
-                    hasNext = currentSentenceIndex < sentences.size - 1,
+                    isPlaying = playingIndex != null,
+                    hasText = text.isNotBlank(),
                     onPlayPause = {
-                        val tts = getTTS()
-                        if (isPlaying) {
-                            tts?.stop()
-                            isPlaying = false
+//                        Log.d(LOG_TAG, "onPlayPause: playingIndex is ${playingIndex}")
+                        if (playingIndex != null) {
+                            onStop()
                         } else {
-                            onPlay()
+                            onPlaySentence(0)
                         }
                     },
                     onPrevious = {
-                        getTTS()?.stop()
-                        isPlaying = false
-                        responseTime = null
-                        if (currentSentenceIndex > 0) {
-                            currentSentenceIndex--
-                        }
-                        onPlay()
+                        val i = playingIndex?.let{ it - 1 }?: 0
+                        onPlaySentence(i)
                     },
                     onNext = {
-                        getTTS()?.stop()
-                        isPlaying = false
-                        responseTime = null
-                        if (currentSentenceIndex < sentences.size - 1) {
-                            currentSentenceIndex++
-                        }
-                        onPlay()
+                        val i = playingIndex?.let{ it + 1 }?: 1
+                        onPlaySentence(i)
                     },
                     onClearReset = {
-                        getTTS()?.stop()
-                        isPlaying = false
-                        responseTime = null
-                        currentSentenceIndex = 0
-
-                        if (currentText.isBlank()) {
-                            currentText = getSampleText(context, langLocale.isO3Language)
-                            sentences = splitIntoSentences(currentText)
-                        } else {
-                            currentText = ""
-                            sentences = emptyList()
-                        }
+                        onStop()
+                        onUpdateText("")
                     }
                 )
             }
 
             // Loading Dialog
-            if (isLoading) {
+            if (!isVoiceReady) {
                 LoadingDialog()
             }
         }

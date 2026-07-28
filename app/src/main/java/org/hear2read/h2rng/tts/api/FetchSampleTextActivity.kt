@@ -5,7 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import org.hear2read.h2rng.tts.getSampleText
+import org.hear2read.h2rng.tts.getSampleTextID
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import java.util.Locale
 
 /**
@@ -15,7 +16,7 @@ import java.util.Locale
  *
  */
 class FetchSampleTextActivity : Activity() {
-    private val LOG_TAG = "H2RNG_" + FetchSampleTextActivity::class.simpleName
+    private val LOG_TAG = LOG_PREFIX + FetchSampleTextActivity::class.simpleName
 
     /**
      * Helper to retrieve the sample text from the resources. Uses deprecated reflection to access
@@ -28,11 +29,8 @@ class FetchSampleTextActivity : Activity() {
         val iso3lang = Locale.Builder().setLanguage(lang).build().isO3Language
 //        val resourceName = "${iso3lang}_sample"
 //        Log.d(LOG_TAG, "Resource name: $resourceName")
-        // TODO: replace with hardcoded conditionals
-//        val resId = this.resources.getIdentifier(resourceName, "string", this.packageName)
-
-//        val sampleText = if (resId != 0) this.getString(resId) else "Some random sample text."
-        val sampleText = getSampleText(this, iso3lang)
+        val textID = getSampleTextID(iso3lang)
+        val sampleText = this.getString(textID)
 
         Log.d(LOG_TAG, sampleText)
         return sampleText

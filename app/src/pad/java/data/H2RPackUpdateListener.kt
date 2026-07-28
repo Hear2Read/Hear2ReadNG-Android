@@ -40,10 +40,16 @@ class H2RPackUpdateListener(assetPackManager: AssetPackManager, private val file
 
                 AssetPackStatus.DOWNLOADING -> {
                     // Update progress during download
+                    val downloadedBytes = state.bytesDownloaded()
+                    val totalBytes = state.totalBytesToDownload()
+                    val progress = if (totalBytes > 0) {
+                        (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 0.99f)
+                    } else {
+                        0f
+                    }
                     H2RVoiceRepository.updateDownloadProgress(
                         assetID = assetID,
-                        downloadedBytes = state.bytesDownloaded(),
-                        totalBytes = state.totalBytesToDownload()
+                        downloadProgress = progress
                     )
                 }
 
@@ -51,8 +57,7 @@ class H2RPackUpdateListener(assetPackManager: AssetPackManager, private val file
                     // Almost complete, still update progress
                     H2RVoiceRepository.updateDownloadProgress(
                         assetID = assetID,
-                        downloadedBytes = state.bytesDownloaded(),
-                        totalBytes = state.totalBytesToDownload()
+                        downloadProgress = 0.99f
                     )
                 }
 

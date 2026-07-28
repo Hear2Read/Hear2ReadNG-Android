@@ -22,14 +22,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.hear2read.h2rng.Hear2ReadNGApplication
+import kotlinx.coroutines.runBlocking
 import org.hear2read.h2rng.data.H2RVoice
+import org.hear2read.h2rng.data.H2RVoiceRepository
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
 import org.hear2read.h2rng.tts.H2RNGCallback
 import org.hear2read.h2rng.tts.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import java.util.Locale
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.coroutineContext
@@ -39,7 +41,7 @@ import kotlin.coroutines.coroutineContext
  *
  */
 class TtsService : TextToSpeechService(), H2RNGCallback {
-    private val LOG_TAG = "H2RNG_" + TtsService::class.simpleName
+    private val LOG_TAG = LOG_PREFIX + TtsService::class.simpleName
 
     /**
      * Service scope used to wait for the [H2RVoiceRepository] to initialize
@@ -62,12 +64,6 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
     private var _callback: SynthesisCallback? = null
 
     /**
-     * Settings observer to check system TTS language change
-     */
-    private lateinit var settingsObserver: ContentObserver
-
-
-    /**
      * onCreate checks whether the H2RVoiceRepository has been initialized and the download states
      * synced before continuing. Also ensures that the espeak data dir has been copied.
      *
@@ -76,20 +72,12 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
         Log.i(LOG_TAG, "onCreate: Hear2Read TTS Service")
         super.onCreate()
 
-        val app = application as Hear2ReadNGApplication
-
         ttsServiceScope.launch {
-            /*
-             Haven't found a way to do this in a cleaner way, and not having the repository
-             initialized means that the TTS won't return the correct available voices
-             */
-            while (!app.isVoiceRepositoryReady()) {
-                delay(50)
-            }
+            // Wait for voice repository to initialize
+            H2RVoiceRepository.isReady.first { it == true }
         }
 
         Synthesizer.init(filesDir.absolutePath, this)
-//        Synthesizer.init(copyDataDir(this, "espeak-ng-data"), this)
     }
 
 
@@ -112,10 +100,10 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
         val currentVoices = getCurrentVoices()
 
         for (voice in currentVoices) {
-//            Log.d(LOG_TAG, "onLoadLanguage checking ${voice.locale.isO3Language}, isDownloaded? ${voice.isDownloaded}")
+        // Log.d(LOG_TAG, "onLoadLanguage checking ${voice.locale.isO3Language}, isDownloaded? ${voice.isDownloaded}")
 
             if (voice.isDownloaded && voice.locale.isO3Language == lang) {
-//                Log.d(LOG_TAG, "Known lang $lang called inside onLoadLanguage")
+        // Log.d(LOG_TAG, "Known lang $lang called inside onLoadLanguage")
 
                 return TextToSpeech.LANG_AVAILABLE
             }
@@ -216,10 +204,10 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * is being called
      *
      */
-    suspend fun printCurrentDispatcher() {
-        val dispatcher = coroutineContext[ContinuationInterceptor]
-        Log.d(LOG_TAG,"Current Dispatcher is: $dispatcher, current thread: ${Thread.currentThread().name}")
-    }
+//    suspend fun printCurrentDispatcher() {
+//        val dispatcher = coroutineContext[ContinuationInterceptor]
+//        Log.d(LOG_TAG,"Current Dispatcher is: $dispatcher, current thread: ${Thread.currentThread().name}")
+//    }
 
 
     /**
@@ -244,6 +232,10 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @return List of voice data in the format required by Android
      */
     override fun onGetVoices(): MutableList<Voice> {
+        // Wait to initialize repo
+        runBlocking {
+            H2RVoiceRepository.isReady.first { it == true }
+        }
         val returnVoices = getCurrentVoices().mapNotNull { h2rVoice ->
              if (h2rVoice.isDownloaded) {
               Voice(
@@ -291,6 +283,10 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * on whether language is available or not
      */
     private fun isLanguageAvailable(lang: String?, country: String?, variant: String?): Int {
+
+        runBlocking {
+            H2RVoiceRepository.isReady.first { it == true }
+        }
 
         val availableVoices = getCurrentVoices().filter { it.isDownloaded }
 

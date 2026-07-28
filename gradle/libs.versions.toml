@@ -1,31 +1,61 @@
 [versions]
-agp = "8.11.2"
+activity = "1.10.1"
+agp = "9.3.1"
+animation = "1.7.8"
+annotation = "1.9.1"
 assetDelivery = "2.3.0"
 coreSplashscreen = "1.2.0"
 firebaseCrashlyticsNdk = "20.0.4"
-kotlin = "2.0.21"
+foundation = "1.7.8"
+foundationLayout = "1.7.8"
+kotlin = "2.2.10"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+kotlinxCoroutinesCore = "1.9.0"
+kotlinxCoroutinesTest = "1.9.0"
+lifecycleCommon = "2.9.1"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
+materialIconsCore = "1.7.8"
 materialIconsExtended = "latest.release"
+monitor = "1.8.0"
 navigationCompose = "2.9.5"
 onnxruntimeAndroid = "latest.release"
+runner = "1.6.1"
+runtime = "1.7.8"
 uiDesktop = "1.7.0"
 firebaseCrashlyticsGradle = "3.0.6"
 firebaseCrashlytics = "20.0.4"
 googleGmsGoogleServices = "4.4.4"
 googleFirebaseCrashlytics = "3.0.6"
 room3Compiler = "3.0.0-alpha02"
+uiText = "1.7.8"
+uiUnit = "1.7.8"
 
 [libraries]
+androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-compose-animation = { module = "androidx.compose.animation:animation", version.ref = "animation" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
+androidx-compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout", version.ref = "foundationLayout" }
+androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "materialIconsCore" }
+androidx-compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "runtime" }
+androidx-compose-ui-text = { module = "androidx.compose.ui:ui-text", version.ref = "uiText" }
+androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit", version.ref = "uiUnit" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycleCommon" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleCommon" }
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycleCommon" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-monitor = { module = "androidx.test:monitor", version.ref = "monitor" }
+androidx-navigation-common = { module = "androidx.navigation:navigation-common", version.ref = "navigationCompose" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-navigation-runtime = { module = "androidx.navigation:navigation-runtime", version.ref = "navigationCompose" }
+androidx-runner = { module = "androidx.test:runner", version.ref = "runner" }
 asset-delivery = { module = "com.google.android.play:asset-delivery", version.ref = "assetDelivery" }
 asset-delivery-ktx = { module = "com.google.android.play:asset-delivery-ktx", version.ref = "assetDelivery" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
@@ -45,6 +75,9 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-ui-desktop = { group = "androidx.compose.ui", name = "ui-desktop", version.ref = "uiDesktop" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntimeAndroid" }
 firebase-crashlytics-gradle = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version.ref = "firebaseCrashlyticsGradle" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics", version.ref = "firebaseCrashlytics" }

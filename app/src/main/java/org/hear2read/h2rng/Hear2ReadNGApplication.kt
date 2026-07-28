@@ -7,6 +7,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.hear2read.h2rng.data.H2RVoiceRepository
 import org.hear2read.h2rng.data.VoiceSyncProvider
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import org.hear2read.h2rng.utils.copyDataDir
 
 /**
@@ -16,22 +17,17 @@ import org.hear2read.h2rng.utils.copyDataDir
  */
 class Hear2ReadNGApplication : Application() {
 
-    val LOG_TAG = "H2RNG_" + Application::class.simpleName
+    val LOG_TAG = LOG_PREFIX + Application::class.simpleName
 
     // Application-level coroutine scope
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val context = this
 
-    // Track voices initialization state
-    private var isRepositoryInitialized = false
-
     override fun onCreate() {
         super.onCreate()
-
         // Initialize VoiceRepository asynchronously
         // We don't block here - initialization happens in background
-
         copyDataDir(this, "espeak-ng-data")
         initializeVoiceRepository()
     }
@@ -39,20 +35,10 @@ class Hear2ReadNGApplication : Application() {
     private fun initializeVoiceRepository() {
         applicationScope.launch {
             H2RVoiceRepository.initializeDefault()
-//            syncDownloadStates()
             VoiceSyncProvider().get().syncVoiceStates(context)
-            isRepositoryInitialized = true
+            H2RVoiceRepository.markAsReady()
         }
     }
-
-
-    /**
-     * Function to query state of repository initialization. Used in the MainActivity and the TTS
-     * service to check for initialzation.
-     *
-     * @return
-     */
-    fun isVoiceRepositoryReady(): Boolean = isRepositoryInitialized
 
     override fun onTerminate() {
         super.onTerminate()

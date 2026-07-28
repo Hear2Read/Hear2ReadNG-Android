@@ -17,36 +17,6 @@ import org.hear2read.h2rng.BuildConfig
 private val FILENAME = "FileUtils"
 private val LOG_TAG = "H2RNG_${FILENAME}"
 
-/**
- * Helper to copy asset file to internal storage
- * TODO: remove
- *
- * @param context [Context] to access the asset file
- * @param filename Name of the file to be copied
- */
-fun copyAssetFile(context: Context, filename: String) {
-    try {
-        val istream = context.assets.open(filename)
-        val newFilename = context.filesDir.absolutePath + "/" + filename
-
-//        println("newFilename: $newFilename")
-
-        val ostream = FileOutputStream(newFilename)
-//        Log.d(LOG_TAG, "Copying $filename to $newFilename")
-        val buffer = ByteArray(1024)
-        var read = 0
-        while (read != -1) {
-            ostream.write(buffer, 0, read)
-            read = istream.read(buffer)
-        }
-        istream.close()
-        ostream.flush()
-        ostream.close()
-    } catch (ex: Exception) {
-        Log.e(LOG_TAG,"Failed to copy file $filename: ${ex.message}")
-    }
-}
-
 fun copyAssetFile(context: Context, filename: String, overWrite: Boolean): String {
     val destFile = File(context.filesDir, filename)
 

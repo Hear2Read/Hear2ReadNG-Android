@@ -12,6 +12,7 @@ import android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
 import android.util.Log
 import androidx.annotation.Keep
 import org.hear2read.h2rng.data.H2RVoice
+import org.hear2read.h2rng.utils.LOG_PREFIX
 import org.hear2read.h2rng.utils.getFileWithExtension
 import java.io.File
 
@@ -41,7 +42,7 @@ object Synthesizer {
         System.loadLibrary("h2r-ng")
     }
 
-    private val LOG_TAG = "H2RNG_" + Synthesizer::class.simpleName
+    private val LOG_TAG = LOG_PREFIX + Synthesizer::class.simpleName
 
     /**
      * Stores the [H2RVoice] object corresponding to the current voice that has been loaded

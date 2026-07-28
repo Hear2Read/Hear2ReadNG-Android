@@ -29,6 +29,12 @@ object H2RVoiceRepository {
 
     // Track if already initialized
     private var isInitialized = false
+//    private val _isInitialized = MutableStateFlow(false)
+//    val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
+
+    //  Track if voice states synchronized
+    private val _isReady = MutableStateFlow(false)
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     /**
      * Initialize the voice list (unused, just in case)
@@ -139,6 +145,10 @@ object H2RVoiceRepository {
         isInitialized = true
     }
 
+    suspend fun markAsReady() = mutex.withLock {
+        if (_isReady.value) return@withLock
+        _isReady.value = true
+    }
     /**
      * Update a specific voice by ID
      */
@@ -152,13 +162,14 @@ object H2RVoiceRepository {
 
     /**
      * Update download state for a voice
+     * TODO: MutableStateFlow.update does CAS, may not need mutex
      */
     suspend fun updateDownloadState(assetID: String, isDownloaded: Boolean) = mutex.withLock {
         _voices.update { currentVoices ->
             currentVoices.map { voice ->
                 if (voice.assetID == assetID) voice.copy(
                     isDownloaded = isDownloaded,
-                    downloadProgress = if (isDownloaded) 1f else 0f,
+                    downloadProgress = if (isDownloaded) 1f else -1f,
                     downloadedBytes = if (isDownloaded) voice.fileSize else 0L
                 ) else voice
             }
@@ -191,7 +202,7 @@ object H2RVoiceRepository {
                     voice.copy(
                         isDownloaded = isDownloaded,
                         fileSize = size,
-                        downloadProgress = if (isDownloaded) 1f else 0f,
+                        downloadProgress = if (isDownloaded) 1f else -1f,
                         downloadedBytes = if (isDownloaded) size else 0L,
                         fileLocation = filePath
                         )
@@ -207,21 +218,17 @@ object H2RVoiceRepository {
      */
     suspend fun updateDownloadProgress(
         assetID: String,
-        downloadedBytes: Long,
-        totalBytes: Long
+        downloadProgress: Float,
+//        downloadedBytes: Long,
+//        totalBytes: Long
     ) = mutex.withLock {
         _voices.update { currentVoices ->
             currentVoices.map { voice ->
                 if (voice.assetID == assetID) {
-                    val progress = if (totalBytes > 0) {
-                        (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                    } else {
-                        0f
-                    }
                     voice.copy(
-                        downloadedBytes = downloadedBytes,
-                        fileSize = totalBytes,
-                        downloadProgress = progress,
+//                        downloadedBytes = downloadedBytes,
+//                        fileSize = totalBytes,
+                        downloadProgress = downloadProgress,
                         isDownloaded = false // Still downloading
                     )
                 } else {
@@ -240,7 +247,7 @@ object H2RVoiceRepository {
                 if (voice.assetID == assetID) {
                     voice.copy(
                         downloadedBytes = 0L,
-                        downloadProgress = 0f,
+                        downloadProgress = -1f,
                         isDownloaded = false
                     )
                 } else {

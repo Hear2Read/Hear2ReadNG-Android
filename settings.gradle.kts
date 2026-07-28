@@ -24,6 +24,6 @@ include(":app")
 include(":en")
 include(":bn")
 include(":kn")
-include(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":si", ":ta", ":te",
+include(":as", ":gu", ":ml", ":mr", ":ne", ":or", ":pa", ":sa", ":si", ":ta", ":te",
     ":hi"
 )

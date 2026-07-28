@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import org.hear2read.h2rng.data.H2RVoiceRepository
 import org.hear2read.h2rng.tts.api.H2RPackUpdateListener
 import org.hear2read.h2rng.ui.components.GlobalTopBar
-import org.hear2read.h2rng.ui.components.VoiceDownloadItem
+import ui.components.VoiceDownloadItem
 import org.hear2read.h2rng.ui.theme.AppColors
 
 /**
@@ -81,17 +81,19 @@ fun VoiceManagerScreen(
                         voiceItem,
                         onDownload = { voice ->
                             scope.launch(Dispatchers.IO) {
-//                                installVoice(voice, assetPackManager)
+                                H2RVoiceRepository.updateDownloadProgress(
+                                    assetID = voice.assetID,
+                                    downloadProgress = 0f
+                                )
                                 assetPackManager.fetch(listOf(voice.assetID))
                             }
                         },
                         onDelete = { voice ->
                             scope.launch(Dispatchers.IO) {
-//                                deleteVoice(voice, assetPackManager)
                                 // Delete voice
                                 assetPackManager.removePack(voice.assetID)
                                 H2RVoiceRepository.updateDownloadState(voice.assetID, false)
-                                H2RVoiceRepository.updateDownloadSize(voice.assetID, 0L)
+//                                H2RVoiceRepository.updateDownloadSize(voice.assetID, 0L)
                             }
                         }
                     )
