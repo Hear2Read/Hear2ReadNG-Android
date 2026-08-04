@@ -7,7 +7,6 @@
 
 package org.hear2read.h2rng.tts.api
 
-import android.database.ContentObserver
 import android.media.AudioFormat
 import android.speech.tts.SynthesisCallback
 import android.speech.tts.SynthesisRequest
@@ -18,6 +17,7 @@ import android.speech.tts.TextToSpeechService
 import android.speech.tts.Voice
 import android.util.Log
 import androidx.annotation.Keep
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,13 +28,14 @@ import kotlinx.coroutines.runBlocking
 import org.hear2read.h2rng.data.H2RVoice
 import org.hear2read.h2rng.data.H2RVoiceRepository
 import org.hear2read.h2rng.data.H2RVoiceRepository.getCurrentVoices
+import org.hear2read.h2rng.tts.AsyncSynthesisTask
 import org.hear2read.h2rng.tts.H2RNGCallback
 import org.hear2read.h2rng.tts.Synthesizer
 import org.hear2read.h2rng.tts.iso3ToIso2Map
 import org.hear2read.h2rng.utils.LOG_PREFIX
+import java.io.File
 import java.util.Locale
-import kotlin.coroutines.ContinuationInterceptor
-import kotlin.coroutines.coroutineContext
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * [TextToSpeechService] implementation for the Hear2ReadNG TTS synthesiser
@@ -51,17 +52,42 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
     /**
      * Stores the Locale of the current voice with the ISO 2 letter code of the language
      */
-    private var _curLang: Locale? = null
+    private var curLang: Locale? = null
 
     /**
      * Stores the value of the current rate of speech
      */
-    private var _curRate: Int = 100
+    private var curRate: Int = 100
 
     /***
      * Stores current SynthesisCallback
      */
-    private var _callback: SynthesisCallback? = null
+    private var synthCallback: SynthesisCallback? = null
+
+    /***
+     * TTS instance of English engine
+     */
+    private lateinit var engTts: TextToSpeech
+
+    /***
+     * Samplerate of English engine
+     */
+    private var engSamplerate: Int = 24000
+
+    /***
+     * Flag signalling English TTS is ready
+     */
+    private val engReadyDeferred = CompletableDeferred<Unit>()
+
+    /***
+     * Holds state of tasks to bridge callbacks
+     */
+    private val englishTasks = ConcurrentHashMap<String, AsyncSynthesisTask>()
+
+    /***
+     * Holds a native synthesis task if running. Only one can appear since chunks alternate
+     */
+    @Volatile private var activeNativeTask: AsyncSynthesisTask? = null
 
     /**
      * onCreate checks whether the H2RVoiceRepository has been initialized and the download states
@@ -78,6 +104,38 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
         }
 
         Synthesizer.init(filesDir.absolutePath, this)
+        initEnglishTts()
+    }
+
+    /***
+     * Initializes the English TTS
+     */
+    private fun initEnglishTts() {
+        engTts = TextToSpeech(applicationContext) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+
+                val listener = EnglishProgressListener(
+                    englishTasks = englishTasks,
+                    onWarmupSuccess = { sampleRate ->
+                        engSamplerate = sampleRate
+                        engReadyDeferred.complete(Unit)
+                    },
+                    onWarmupFailed = {
+                        // Fallback to default if warmup fails
+                        // TODO: change behaviour to have a real fallback
+                        engReadyDeferred.complete(Unit)
+                    }
+                )
+
+                engTts.setOnUtteranceProgressListener(listener)
+
+                // Start warmup
+                val dummyFile = File(cacheDir, "warmup.wav")
+                engTts.synthesizeToFile("a", null, dummyFile, "warmup")
+            } else {
+                engReadyDeferred.complete(Unit)
+            }
+        }
     }
 
 
@@ -139,9 +197,9 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @param callback [SynthesisCallback] used to feed the synthesized audio
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
-        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
+//        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
-        _callback = callback
+        synthCallback = callback
 
         val text = request.charSequenceText.toString()
         val rate = request.speechRate / 100f
@@ -182,12 +240,16 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
             return
         }
 
-        if (_curLang?.language != h2RVoice.locale.language) {
-            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${h2RVoice.locale}")
-            _curLang = Locale.Builder().setLanguage(h2RVoice.locale.language).build()
+        if (curLang?.language != h2RVoice.locale.language) {
+//            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${h2RVoice.locale}")
+            curLang = Locale.Builder().setLanguage(h2RVoice.locale.language).build()
         }
 
-        callback.start(h2RVoice.sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
+        // Wait till English Tts is ready
+        runBlocking{ engReadyDeferred.await() }
+
+//        callback.start(h2RVoice.sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
+        callback.start(engSamplerate, AudioFormat.ENCODING_PCM_16BIT, 1)
 
         if (text.isBlank() || text.isEmpty()) {
             callback.done()
@@ -252,7 +314,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
              }
             else null
         }
-        Log.d(LOG_TAG, "onGetVoices returning: $returnVoices")
+//        Log.d(LOG_TAG, "onGetVoices returning: $returnVoices")
         return returnVoices.toMutableList()
     }
 
@@ -268,7 +330,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * on whether language is available or not
      */
      override fun onIsLanguageAvailable(lang: String?, country: String?, variant: String?): Int {
-         Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
+//         Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
          return isLanguageAvailable(lang, country, variant)
      }
 
@@ -308,8 +370,8 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @return Array of [lang ISO3 code, country code, variant]
      */
     override fun onGetLanguage(): Array<String> {
-        Log.d(LOG_TAG, "onGetLanguage")
-        return arrayOf(_curLang?.isO3Language ?: "", "", "")
+//        Log.d(LOG_TAG, "onGetLanguage")
+        return arrayOf(curLang?.isO3Language ?: "", "", "")
     }
 
 
@@ -322,7 +384,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * valid or not
      */
     override fun onIsValidVoiceName(voiceName: String?): Int {
-        Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName")
+//        Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName")
         val availableVoices = getCurrentVoices().filter { it.isDownloaded }
         return if (availableVoices.any { h2RVoice: H2RVoice -> h2RVoice.id == voiceName }) {
 //            Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName success")
@@ -396,14 +458,14 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      */
     private fun feedAudioToCallback(audioData: ByteArray): Int {
         Log.d(LOG_TAG, "Feeding audio length ${audioData.size}")
-        _callback?.let {  }
-        val maxBufferSize = _callback?.maxBufferSize?: 0
+        synthCallback?.let {  }
+        val maxBufferSize = synthCallback?.maxBufferSize?: 0
         var offset = 0
 
         while (offset < audioData.size) {
             val chunkSize = minOf(maxBufferSize, audioData.size - offset)
 //            Log.d(LOG_TAG, "Feeding chunk at $offset, chunk $chunkSize")
-            val written = _callback?.audioAvailable(
+            val written = synthCallback?.audioAvailable(
                 audioData,
                 offset,
                 chunkSize
@@ -423,7 +485,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
     @Keep
     override fun onDone() {
         Log.d(LOG_TAG, "onDone")
-        _callback?.done()
+        synthCallback?.done()
     }
 
     /**
