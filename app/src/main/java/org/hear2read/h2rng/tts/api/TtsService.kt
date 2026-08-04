@@ -95,7 +95,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * whether the voice is found
      */
     override fun onLoadLanguage(lang: String?, country: String?, variant: String?): Int {
-    Log.d(LOG_TAG, "onLoadLanguage: $lang")
+//    Log.d(LOG_TAG, "onLoadLanguage: $lang")
 
         val currentVoices = getCurrentVoices()
 
@@ -113,7 +113,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
     }
 
     override fun onLoadVoice(voiceName: String?): Int {
-        Log.d(LOG_TAG, "onLoadVoice: $voiceName")
+//        Log.d(LOG_TAG, "onLoadVoice: $voiceName")
 
         if (voiceName in getCurrentVoices().map { h2rVoice -> h2rVoice.id})
             return SUCCESS
@@ -139,7 +139,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @param callback [SynthesisCallback] used to feed the synthesized audio
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
-        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
+//        Log.d(LOG_TAG, "onSynthesizeText: Hear2Read TTS Service")
 
         _callback = callback
 
@@ -183,7 +183,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
         }
 
         if (_curLang?.language != h2RVoice.locale.language) {
-            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${h2RVoice.locale}")
+//            Log.d(LOG_TAG, "Updating _curLang: $_curLang to ${h2RVoice.locale}")
             _curLang = Locale.Builder().setLanguage(h2RVoice.locale.language).build()
         }
 
@@ -252,7 +252,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
              }
             else null
         }
-        Log.d(LOG_TAG, "onGetVoices returning: $returnVoices")
+//        Log.d(LOG_TAG, "onGetVoices returning: $returnVoices")
         return returnVoices.toMutableList()
     }
 
@@ -268,7 +268,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * on whether language is available or not
      */
      override fun onIsLanguageAvailable(lang: String?, country: String?, variant: String?): Int {
-         Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
+//         Log.d(LOG_TAG, "onIsLangAvailable: Hear2Read TTS Service: $lang, $country, $variant")
          return isLanguageAvailable(lang, country, variant)
      }
 
@@ -308,7 +308,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @return Array of [lang ISO3 code, country code, variant]
      */
     override fun onGetLanguage(): Array<String> {
-        Log.d(LOG_TAG, "onGetLanguage")
+//        Log.d(LOG_TAG, "onGetLanguage")
         return arrayOf(_curLang?.isO3Language ?: "", "", "")
     }
 
@@ -322,7 +322,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * valid or not
      */
     override fun onIsValidVoiceName(voiceName: String?): Int {
-        Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName")
+//        Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName")
         val availableVoices = getCurrentVoices().filter { it.isDownloaded }
         return if (availableVoices.any { h2RVoice: H2RVoice -> h2RVoice.id == voiceName }) {
 //            Log.d(LOG_TAG, "onIsValidVoiceName: $voiceName success")
@@ -352,8 +352,8 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
         val iso3Map = availableVoices.associateBy { h2RVoice ->
             h2RVoice.locale.isO3Language
         }
-        Log.d(LOG_TAG, "onGetDefaultVoiceNameFor $lang returning : " +
-                (iso3Map[lang.toString()]?.id ?: ""))
+//        Log.d(LOG_TAG, "onGetDefaultVoiceNameFor $lang returning : " +
+//                (iso3Map[lang.toString()]?.id ?: ""))
 
         return iso3Map[lang.toString()]?.id ?: ""
     }
@@ -365,7 +365,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      */
     override fun onStop() {
         // TODO: need to stop synthesis somehow
-        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
+//        Log.d(LOG_TAG, "onStop: Hear2Read TTS Service")
 //        _curPipeline.get()?.stop()
 //        Synthesizer.terminate()
     }
@@ -377,7 +377,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      */
     @Keep
     override fun onAudio(samples: ShortArray) {
-        Log.d(LOG_TAG, "onAudioo length ${samples.size}")
+//        Log.d(LOG_TAG, "onAudio length ${samples.size}")
         val byteArray = ByteArray(samples.size * Short.SIZE_BYTES)
         for (i in 0 until samples.size) {
             val intVal = samples[i].toInt()
@@ -395,7 +395,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      * @return 1 if completed, 0 if interrupted
      */
     private fun feedAudioToCallback(audioData: ByteArray): Int {
-        Log.d(LOG_TAG, "Feeding audio length ${audioData.size}")
+//        Log.d(LOG_TAG, "Feeding audio length ${audioData.size}")
         _callback?.let {  }
         val maxBufferSize = _callback?.maxBufferSize?: 0
         var offset = 0
@@ -422,7 +422,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
      */
     @Keep
     override fun onDone() {
-        Log.d(LOG_TAG, "onDone")
+//        Log.d(LOG_TAG, "onDone")
         _callback?.done()
     }
 
@@ -434,7 +434,7 @@ class TtsService : TextToSpeechService(), H2RNGCallback {
     @Keep
     override fun onIndexReached(index: Int) {
 //        TODO("Not yet implemented")
-        Log.d(LOG_TAG, "onIndexReached $index")
+//        Log.d(LOG_TAG, "onIndexReached $index")
     }
 
 }
