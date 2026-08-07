@@ -4,6 +4,7 @@ agp = "9.3.1"
 animation = "1.7.8"
 annotation = "1.9.1"
 assetDelivery = "2.3.0"
+core = "1.2.0"
 coreSplashscreen = "1.2.0"
 firebaseCrashlyticsNdk = "20.0.4"
 foundation = "1.7.8"
@@ -45,6 +46,7 @@ androidx-compose-material-icons-core = { module = "androidx.compose.material:mat
 androidx-compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "runtime" }
 androidx-compose-ui-text = { module = "androidx.compose.ui:ui-text", version.ref = "uiText" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit", version.ref = "uiUnit" }
+androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycleCommon" }

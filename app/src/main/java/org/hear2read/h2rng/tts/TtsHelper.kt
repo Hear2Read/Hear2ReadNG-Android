@@ -82,7 +82,7 @@ class AsyncSynthesisTask(
 )
 
 data class TextChunk(
-    val text: String,
+    var text: String,
     val isEnglish: Boolean
 )
 

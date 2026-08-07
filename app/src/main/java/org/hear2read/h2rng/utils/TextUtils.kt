@@ -4,27 +4,11 @@ import org.hear2read.h2rng.tts.iso3ToIso2Map
 
 //import android.util.Log
 //
-//private val FILENAME = "TextUtils"
-//private val LOG_TAG = "H2RNG_${FILENAME}"
 
 val LOG_PREFIX = "H2RNG_"
 
-/**
- * TODO: Moved, remove
- * Split text into sentences and returns list of sentences. Used in the [TTSDemoScreen] for
- * playback navigation
- *
- * @param text The text to be split
- * @return List of the sentences
- */
-//fun splitIntoSentences(text: String): List<String> {
-//    if (text.isBlank()) return emptyList()
-//
-////    return text.split(Regex("[.!?]+"))
-////        .map { it.trim() }
-////        .filter { it.isNotBlank() }
-//    return listOf(text)
-//}
+//private val FILENAME = "TextUtils"
+//private val LOG_TAG = "${LOG_PREFIX}${FILENAME}"
 
 /**
  * Get script character from ISO code. Used for the icon in the [LanguageListItem]
