@@ -1,4 +1,7 @@
-package org.hear2read.h2rng.tts
+package org.hear2read.h2rng.utils
+
+import org.hear2read.h2rng.tts.TextChunk
+import kotlin.text.iterator
 
 object TextSplitter {
 
@@ -6,6 +9,10 @@ object TextSplitter {
 
     /**
      * Chunks text into parts that are to be read by either the English TTS, or our native TTS
+     *
+     * @param text The mixed text to be chunked
+     * @param scriptRange The Unicode range of the native script
+     * @return The [org.hear2read.h2rng.tts.TextChunk]s
      */
     fun splitText(text: String, scriptRange: IntRange): List<TextChunk> {
         val subsequences = mutableListOf<TextChunk>()
@@ -61,7 +68,7 @@ object TextSplitter {
             val isSplit = !(isNotWord || isCurrNontext) && (isNative != isCurrNative)
 
             if (isSplit) {
-                splitTexts.add(TextChunk(isEnglish = isNative, text = textBit.toString()))
+                splitTexts.add(TextChunk(isEnglish = !isNative, text = textBit.toString()))
                 textBit.clear()
             }
 
@@ -75,7 +82,7 @@ object TextSplitter {
 
         // Add final chunk
         if (textBit.isNotEmpty()) {
-            splitTexts.add(TextChunk(isEnglish = isNative, text = textBit.toString()))
+            splitTexts.add(TextChunk(isEnglish = !isNative, text = textBit.toString()))
         }
 
         // Merge consequent chunks of same type

@@ -15,7 +15,7 @@ import org.hear2read.h2rng.BuildConfig
 
 // Constants for the lag tag
 private val FILENAME = "FileUtils"
-private val LOG_TAG = "H2RNG_${FILENAME}"
+private val LOG_TAG = "${LOG_PREFIX}${FILENAME}"
 
 fun copyAssetFile(context: Context, filename: String, overWrite: Boolean): String {
     val destFile = File(context.filesDir, filename)

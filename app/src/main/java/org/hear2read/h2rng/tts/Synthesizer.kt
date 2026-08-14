@@ -108,12 +108,16 @@ object Synthesizer {
 
     @Keep
     external fun synthesize(
-        text: String,   // TODO? create class corresponding to SynthRequest struct?
+        text: String,
         speed: Float,
         pitch: Float,
         volume: Int,
-        charMode: Boolean
+        charMode: Boolean,
+        sampleRate: Int
     ): Int
+
+    @Keep
+    external fun stop()
 
     @Keep
     external fun terminate()

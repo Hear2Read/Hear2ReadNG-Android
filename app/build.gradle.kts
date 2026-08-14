@@ -13,7 +13,7 @@ val ndkVer: String = gradleLocalProperties(rootDir, providers).getProperty("ndk.
 val ortbuildDir: String = gradleLocalProperties(rootDir, providers).getProperty("ortbuild.dir")
 val allPacks = listOf(":en", ":as", ":bn", ":gu", ":kn", ":ml", ":mr", ":ne", ":or", ":pa", ":sa",
     ":si", ":ta", ":te", ":hi")
-val smallPacks = listOf(":en", ":kn", ":hi")
+val smallPacks = listOf(":si", ":kn", ":hi")
 
 android {
     namespace = "org.hear2read.h2rng"
@@ -23,8 +23,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 36
-        versionCode = 17
-        versionName = "2.3"
+        versionCode = 18
+        versionName = "2.4"
         ndkVersion = ndkVer
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
