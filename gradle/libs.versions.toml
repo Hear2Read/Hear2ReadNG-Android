@@ -1,6 +1,6 @@
 [versions]
 activity = "1.10.1"
-agp = "9.3.1"
+agp = "9.3.2"
 animation = "1.7.8"
 annotation = "1.9.1"
 assetDelivery = "2.3.0"

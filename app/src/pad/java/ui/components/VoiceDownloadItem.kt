@@ -64,7 +64,7 @@ fun VoiceDownloadItem(
     var enabled = true
 
     if (isDownloaded) {
-        displayText = "Delete"
+        displayText = "Delete installed ${h2RVoice.locale.displayName} voice"
         displayIcon = Icons.Default.Delete
         onClickAction = { voiceItem ->
             onDelete(voiceItem)

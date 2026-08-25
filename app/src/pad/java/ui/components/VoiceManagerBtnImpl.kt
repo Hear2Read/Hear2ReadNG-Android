@@ -2,6 +2,7 @@ package ui.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -38,7 +39,9 @@ class VoiceManagerBtnImpl: VoiceManagerBtn {
         FloatingActionButton(
             onClick = onInstallVoiceClick,
             containerColor = Color.White,
-            modifier = Modifier.semantics {
+            modifier = Modifier
+                .navigationBarsPadding()
+                .semantics {
                 contentDescription = "Install voice button. Opens screen to install additional TTS voices."
             }
         ) {

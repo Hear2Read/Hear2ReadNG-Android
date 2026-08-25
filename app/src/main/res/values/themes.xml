@@ -13,6 +13,6 @@
         <item name="windowSplashScreenIconBackgroundColor">@color/white</item>
 
         <!-- Optional: Set post splash screen theme -->
-<!--        <item name="postSplashScreenTheme">@style/Theme.App</item>-->
+        <item name="postSplashScreenTheme">@style/Theme.TTSNGDemo</item>
     </style>
 </resources>

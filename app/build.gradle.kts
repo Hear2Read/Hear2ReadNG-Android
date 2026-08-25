@@ -23,8 +23,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 36
-        versionCode = 18
-        versionName = "2.4"
+        versionCode = 19
+        versionName = "2.4.1"
         ndkVersion = ndkVer
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -226,5 +226,20 @@ gradle.startParameter.taskNames.forEach { taskName ->
     } else if (isSmall) {
         android.assetPacks.clear()
         android.assetPacks += smallPacks
+    }
+}
+
+tasks.configureEach {
+    // Automate Crashlytics NDK symbol upload
+    // Don't actually generalize, we only release PadStatic variant
+//    val match = Regex("^(assemble|bundle)(.+)Release$").find(name)
+//    if (match != null) {
+//        val flavorAndType = match.groupValues[2] + "Release"
+//        // run Crashlytics symbol upload
+//        finalizedBy("uploadCrashlyticsSymbolFile$flavorAndType")
+//    }
+    // The only variant we release for now
+    if (name == "assemblePadStaticRelease" || name == "bundlePadStaticRelease") {
+        finalizedBy("uploadCrashlyticsSymbolFilePadStaticRelease")
     }
 }
