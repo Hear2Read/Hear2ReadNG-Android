@@ -11,8 +11,8 @@ plugins {
 val h2rngDir: String = gradleLocalProperties(rootDir, providers).getProperty("h2rng.dir")
 val ndkVer: String = gradleLocalProperties(rootDir, providers).getProperty("ndk.version")
 val ortbuildDir: String = gradleLocalProperties(rootDir, providers).getProperty("ortbuild.dir")
-val allPacks = listOf(":en", ":as", ":bn", ":gu", ":kn", ":ml", ":mr", ":ne", ":or", ":pa", ":sa",
-    ":si", ":ta", ":te", ":hi")
+val allPacks = listOf(":as", ":bn", ":gu", ":kn", ":ml", ":mr", ":ne", ":or", ":pa", ":sa",
+    ":si", ":ta", ":te", ":hi") //TODO: removed en, remove pack as well
 val smallPacks = listOf(":si", ":kn", ":hi")
 
 android {
@@ -23,8 +23,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 36
-        versionCode = 19
-        versionName = "2.4.1"
+        versionCode = 20
+        versionName = "2.4.2"
         ndkVersion = ndkVer
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,10 +37,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+//            proguardFiles(
+//                getDefaultProguardFile("proguard-android-optimize.txt"),
+//                "proguard-rules.pro"
+//            )
             signingConfig = signingConfigs.getByName("debug")
 
             configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
@@ -66,6 +66,17 @@ android {
             manifestPlaceholders["appLabel"] = "Hear2Read NG"
 
             assetPacks += allPacks
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            externalNativeBuild {
+                cmake {
+                    arguments += "-DANDROID_DEBUG=0"
+                }
+            }
         }
         // Limited PAD delivery of select voices for faster testing
         create("padsmall") {
@@ -73,6 +84,11 @@ android {
             manifestPlaceholders["appLabel"] = "Hear2Read NG (small)"
 //            applicationIdSuffix = ".small"
             versionNameSuffix = "-small"
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules-debug.pro"
+            )
         }
         // Local delivery without PAD for immediate running
         create("local") {
@@ -80,7 +96,16 @@ android {
             manifestPlaceholders["appLabel"] = "Hear2Read NG (Local)"
             applicationIdSuffix = ".local"
             versionNameSuffix = "-local"
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules-debug.pro"
+            )
             // No asset pack dependencies
+            externalNativeBuild {
+                cmake {
+                    arguments += "-DANDROID_DEBUG=1"
+                }
+            }
         }
 
         // Static .so used in release app

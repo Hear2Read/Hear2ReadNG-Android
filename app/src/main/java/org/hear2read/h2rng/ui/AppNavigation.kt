@@ -30,6 +30,7 @@ fun AppNavigation(
     val rawText by mainViewModel.rawText.collectAsStateWithLifecycle()
     val playingIndex by mainViewModel.playingIndex.collectAsStateWithLifecycle()
     val responseTime by mainViewModel.responseTime.collectAsStateWithLifecycle()
+    val realTimeFactor by mainViewModel.realTimeFactor.collectAsStateWithLifecycle()
     val isNextEnabled by mainViewModel.isNextEnabled.collectAsStateWithLifecycle()
 
     NavHost(
@@ -67,6 +68,7 @@ fun AppNavigation(
                 isVoiceReady = isVoiceReady,
                 playingIndex = playingIndex,
                 responseTime = responseTime,
+                realTimeFactor = realTimeFactor,
                 onUpdateText = { newText: String -> mainViewModel.updateText(newText) },
                 onPlaySentence = { index: Int
                     ->  mainViewModel.playSentence(index)},

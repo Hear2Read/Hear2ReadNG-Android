@@ -45,11 +45,24 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
     private val _rawText = MutableStateFlow("")
     val rawText = _rawText.asStateFlow()
     // Stores index of currently playing text, null if stopped playing
+    // TODO: does basically nothing currently
     private val _playingIndex = MutableStateFlow<Int?>(null)
     val playingIndex = _playingIndex.asStateFlow()
-    // Stores index of currently playing text, null if not playing
+    // Stores response time of currently playing text, null if not started
     private val _responseTime = MutableStateFlow<Long?>(null)
     val responseTime = _responseTime.asStateFlow()
+    // Stores response time of currently playing text, null if not started
+    private val _realTimeFactor = MutableStateFlow<Float?>(null)
+    val realTimeFactor = _realTimeFactor.asStateFlow()
+    // Sample rate of current voice, used to calculate audio length, and consequently, real time
+    // factor
+    var sampleRate = 22050
+    // Stores current utterance ID string
+    var utteranceId = "NONE"
+    // Stores current utterance ID
+    var currId = -1
+    // Stores start time used to calculate latency measures
+    var startTime = System.currentTimeMillis()
 
     // List of sentences, watches _rawText. If _rawText changes, recalculates.
     // stateIn caches the result so the UI doesn't force it to recalculate constantly.
@@ -92,6 +105,7 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
      */
     fun updateText(newText: String) {
         _responseTime.value = null
+        _realTimeFactor.value = null
         // If edited while reading, stop playback
         if (_playingIndex.value != null) {
             stopTts()
@@ -177,12 +191,24 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
                     tts.setPitch(1.0f)
                     setupInitUtteranceListener(tts)
                     val dummySentence = ""
-                    tts.speak(dummySentence, TextToSpeech.QUEUE_FLUSH, null, "INIT_UTTERANCE")
+                    tts.speak(dummySentence,
+                        TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        "INIT_UTTERANCE")
                 }
                 return
             }
+            val voice = tts.voice
+            if (voice != null) {
+                val qlty = voice.name.split("-").last()
+                if(qlty.startsWith("med"))
+                    sampleRate = 22050
+                else if(qlty.startsWith("low"))
+                    sampleRate = 16000
+            }
             // Set ready since nothing needs to be done
             _isVoiceReady.value = true
+
             return
         }
         // TODO make more expressive
@@ -200,6 +226,7 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
             override fun onStart(utteranceId: String?) {
                 if (utteranceId == INIT_UTT_ID) {
                     _isVoiceReady.value = true
+                    setupTtsUtteranceListener()
                 }
             }
 
@@ -209,6 +236,57 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
                 // TODO: Handle error
+            }
+        })
+    }
+
+    fun setupTtsUtteranceListener() {
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            var samples:Int = 0
+            override fun onAudioAvailable(uttId: String?, audio: ByteArray?) {
+                super.onAudioAvailable(utteranceId, audio)
+                if(audio != null)
+                    samples += audio.size / 2
+                if (uttId.toString() == utteranceId) {
+                    // Update response time, but only on first instance that audio is available
+                    if (_responseTime.value == null)
+                        _responseTime.value = System.currentTimeMillis() - startTime
+                }
+
+            }
+
+            // unused as this is called well in advance of audio being received
+            override fun onStart(uttId: String?) {
+                samples = 0
+            }
+
+            override fun onDone(uttId: String?) {
+                if (uttId == utteranceId) {
+                    // TODO: modify for different sample rates
+                    val audioTimeMillis: Float = (samples * 1000)/sampleRate.toFloat()
+                    val responseTimeVal:Long? = _responseTime.value
+                    if(responseTimeVal != null) {
+                        _realTimeFactor.value = responseTimeVal / audioTimeMillis
+                    }
+                    Log.d(LOG_TAG, "Real time factor: $responseTimeVal / $audioTimeMillis " +
+                            "($samples/${sampleRate.toFloat()}) = ${_realTimeFactor.value}")
+                    // on complete behaviour, enqueue if remaining,
+                    if (currId < sentences.value.size - 1)
+                        playSentence(currId + 1)
+                    // else stop
+                    else
+                        stopTts()
+                }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(uttId: String?) {
+                // Try playing the next if remaining,
+                if (currId < sentences.value.size - 1)
+                    playSentence(currId + 1)
+                // else stop
+                else
+                    stopTts()
             }
         })
     }
@@ -225,56 +303,21 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
     ) {
         Log.d(LOG_TAG, "playSentence: on index $index, playingIndex: ${playingIndex.value}, " +
                 "no. sentences: ${sentences.value.size}")
-        var i = index
+        currId = index
 
         if ((index < 0 ) or (index >= sentences.value.size))
-            i = 0
+            currId = 0
 
         // Stop playback
         stopTts()
 
-        val sentence = sentences.value[i]
-        Log.d(LOG_TAG, "playSentence: reading sentence: #$i, $sentence")
-        val utteranceId = "SENTENCE_$i"
-        val startTime = System.currentTimeMillis()
+        val sentence = sentences.value[currId]
+        Log.d(LOG_TAG, "playSentence: reading sentence: #$currId, $sentence")
+        utteranceId = "SENTENCE_$currId"
+        startTime = System.currentTimeMillis()
         _responseTime.value = null
-        _playingIndex.value = i
-
-        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onAudioAvailable(uttId: String?, audio: ByteArray?) {
-                super.onAudioAvailable(utteranceId, audio)
-                if (uttId.toString() == utteranceId) {
-                    // Update response time, but only on first instance that audio is available
-                    if (_responseTime.value == null)
-                        _responseTime.value = System.currentTimeMillis() - startTime
-                }
-
-            }
-            // unused as this is called well in advance of audio being received
-            override fun onStart(uttId: String?) {
-            }
-
-            override fun onDone(uttId: String?) {
-                if (uttId == utteranceId) {
-                    // on complete behaviour, enqueue if remaining,
-                    if (i < sentences.value.size - 1)
-                        playSentence(i + 1)
-                    // else stop
-                    else
-                        stopTts()
-                }
-            }
-
-            @Deprecated("Deprecated in Java")
-            override fun onError(uttId: String?) {
-                // Try playing the next if remaining,
-                if (i < sentences.value.size - 1)
-                    playSentence(i + 1)
-                // else stop
-                else
-                    stopTts()
-            }
-        })
+        _realTimeFactor.value = null
+        _playingIndex.value = currId
 
         tts?.speak(sentence, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }

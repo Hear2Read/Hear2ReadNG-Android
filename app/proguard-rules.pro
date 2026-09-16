@@ -34,3 +34,9 @@
 #}
 # This rule only keeps the implemented methods
 -keep class * implements org.hear2read.h2rng.tts.H2RNGCallback
+
+# Remove debug and verbose logs
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+}

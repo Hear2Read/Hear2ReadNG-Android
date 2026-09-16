@@ -60,7 +60,7 @@ fun copyAssetsRecur(context: Context, path: String, overWrite: Boolean): Boolean
 }
 
 /**
- * Copy assets to internal storage? Not sure what this is doing, seems only for the data assets
+ * Copy assets to internal storage. Used mainly in local builds
  *
  * @param context [Context] used to access filesystem
  * @param path Path of asset folder

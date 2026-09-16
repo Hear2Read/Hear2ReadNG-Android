@@ -25,7 +25,7 @@ import org.hear2read.h2rng.ui.theme.AppColors
  * @param responseTime The response time in milliseconds. If null, response time is not diplayed
  */
 @Composable
-fun ResponseTimeCard(responseTime: Long?) {
+fun ResponseTimeCard(responseTime: Long?, realTimeFactor: Float?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,6 +54,41 @@ fun ResponseTimeCard(responseTime: Long?) {
             )
             Text(
                 text = if (responseTime != null) "${responseTime}ms" else "—",
+                fontSize = 20.sp,
+                color = Color.White,
+//                color = AppColors.primaryColor,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = if (realTimeFactor != null) {
+                    "Real time factor: ${realTimeFactor}"
+                } else {
+                    "Real time factor: Not measured yet"
+                }
+            },
+        colors = CardDefaults.cardColors(containerColor = AppColors.surfaceColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Real Time Factor:",
+                fontSize = 16.sp,
+                color = AppColors.textSecondaryColor,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = if (realTimeFactor != null) "${realTimeFactor}" else "—",
                 fontSize = 20.sp,
                 color = Color.White,
 //                color = AppColors.primaryColor,

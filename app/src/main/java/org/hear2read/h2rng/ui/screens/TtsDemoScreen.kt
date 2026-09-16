@@ -48,6 +48,7 @@ fun TTSDemoScreen(
     isVoiceReady: Boolean,
     playingIndex: Int?,
     responseTime: Long?,
+    realTimeFactor: Float?,
     onPlaySentence: (index: Int) -> Unit,
     onStop: () -> Unit,
     onUpdateText: (text: String) -> Unit
@@ -122,7 +123,7 @@ fun TTSDemoScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Response Time Display
-                ResponseTimeCard(responseTime)
+                ResponseTimeCard(responseTime, realTimeFactor)
             }
 
             // Loading Dialog
