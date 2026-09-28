@@ -23,8 +23,8 @@ android {
         applicationId = "org.hear2read.h2rng"
         minSdk = 30
         targetSdk = 36
-        versionCode = 20
-        versionName = "2.4.2"
+        versionCode = 21
+        versionName = "2.5"
         ndkVersion = ndkVer
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -94,7 +94,9 @@ android {
         create("local") {
             dimension = "delivery"
             manifestPlaceholders["appLabel"] = "Hear2Read NG (Local)"
-            applicationIdSuffix = ".local"
+            // removing this for easier testing by sideloading. The parent package is registered
+            // but the one with the .local extension isn't
+            // applicationIdSuffix = ".local"
             versionNameSuffix = "-local"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

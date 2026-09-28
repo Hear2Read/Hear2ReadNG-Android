@@ -173,6 +173,7 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
     fun initializeVoice(
         langLocale: Locale? = null
     ) {
+        Log.d(LOG_TAG, "initializeVoice: $langLocale")
         _isVoiceReady.value = false
         // If TTS already exists and is for the same language, reuse it
         tts?.let { tts ->
@@ -184,9 +185,20 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
                 if (result == TextToSpeech.LANG_MISSING_DATA ||
                     result == TextToSpeech.LANG_NOT_SUPPORTED
                 ) {
+                    Log.w(LOG_TAG,"intializeVoice, failed set voice to: ${lang}")
                     // TODO have additional flag
 //                    onError()
                 } else {
+                    val voice = tts.voice
+                    Log.d(LOG_TAG,"intializeVoice, set voice to: ${voice.name}")
+                    if (voice != null) {
+                        val qlty = voice.name.split("-").last()
+                        if(qlty.startsWith("med"))
+                            sampleRate = 22050
+                        else if(qlty.startsWith("low"))
+                            sampleRate = 16000
+                        Log.i(LOG_TAG, "Set RTF voice samplerate: $sampleRate")
+                    }
                     tts.setSpeechRate(1.0f)
                     tts.setPitch(1.0f)
                     setupInitUtteranceListener(tts)
@@ -198,16 +210,6 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
                 }
                 return
             }
-            val voice = tts.voice
-            if (voice != null) {
-                val qlty = voice.name.split("-").last()
-                if(qlty.startsWith("med"))
-                    sampleRate = 22050
-                else if(qlty.startsWith("low"))
-                    sampleRate = 16000
-            }
-            // Set ready since nothing needs to be done
-            _isVoiceReady.value = true
 
             return
         }
@@ -266,10 +268,11 @@ class MainViewModel (application: Application) : AndroidViewModel(application) {
                     val audioTimeMillis: Float = (samples * 1000)/sampleRate.toFloat()
                     val responseTimeVal:Long? = _responseTime.value
                     if(responseTimeVal != null) {
-                        _realTimeFactor.value = responseTimeVal / audioTimeMillis
+                        _realTimeFactor.value =  audioTimeMillis / responseTimeVal
                     }
-                    Log.d(LOG_TAG, "Real time factor: $responseTimeVal / $audioTimeMillis " +
-                            "($samples/${sampleRate.toFloat()}) = ${_realTimeFactor.value}")
+                    Log.d(LOG_TAG, "Synthesis speed: $audioTimeMillis " +
+                            "($samples/${sampleRate}) / $responseTimeVal " +
+                            "= ${_realTimeFactor.value}")
                     // on complete behaviour, enqueue if remaining,
                     if (currId < sentences.value.size - 1)
                         playSentence(currId + 1)

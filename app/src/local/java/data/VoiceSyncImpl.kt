@@ -40,8 +40,8 @@ class VoiceSyncImpl: VoiceSync {
             }
             else {
                 Log.d(LOG_TAG, "Found voice : ${voice.id}")
-                val voiceFilePath = File(voiceDir, onnxFile).absolutePath
-                H2RVoiceRepository.updateDownloadInfo(voice.assetID,
+//                val voiceFilePath = File(voiceDir, onnxFile).absolutePath
+                H2RVoiceRepository.updateDownloadInfoId(voice.id,
                                                  true,
                                                         0L,
                                                              voiceDir.absolutePath)

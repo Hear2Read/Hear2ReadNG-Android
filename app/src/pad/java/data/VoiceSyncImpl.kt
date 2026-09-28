@@ -47,7 +47,7 @@ class VoiceSyncImpl: VoiceSync {
                         "syncDownloadStates: packstate error code: ${packState.errorCode()}")
                     if (packState.errorCode() == AssetPackErrorCode.PACK_UNAVAILABLE) {
                         Log.w(LOG_TAG, "AssetPack $pack not found! Deleting from repository")
-                        H2RVoiceRepository.removeVoice(pack)
+                        H2RVoiceRepository.removeVoiceAssetId(pack)
                         continue
                     }
 //                val assetPackLocation = assetPackManager.getPackLocation(voice.assetID)
@@ -64,12 +64,12 @@ class VoiceSyncImpl: VoiceSync {
             catch (e: LocalTestingException) {
                 Log.w(LOG_TAG,
                     "AssetPack $pack not found in local testing! Deleting from repository")
-                H2RVoiceRepository.removeVoice(pack)
+                H2RVoiceRepository.removeVoiceAssetId(pack)
             }
             catch (e: AssetPackException) {
                 Log.w(LOG_TAG,
                     "Error obtaining asset pack information, check internet: ${e.message}")
-                H2RVoiceRepository.removeVoice(pack)
+                H2RVoiceRepository.removeVoiceAssetId(pack)
             }
             catch (e: Exception) {
                 Log.w(LOG_TAG,

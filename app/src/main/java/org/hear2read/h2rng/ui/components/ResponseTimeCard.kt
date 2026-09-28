@@ -66,9 +66,9 @@ fun ResponseTimeCard(responseTime: Long?, realTimeFactor: Float?) {
             .fillMaxWidth()
             .semantics {
                 contentDescription = if (realTimeFactor != null) {
-                    "Real time factor: ${realTimeFactor}"
+                    "Synthesis speed: ${realTimeFactor} X"
                 } else {
-                    "Real time factor: Not measured yet"
+                    "Synthesis speed: Not measured yet"
                 }
             },
         colors = CardDefaults.cardColors(containerColor = AppColors.surfaceColor),
@@ -82,7 +82,7 @@ fun ResponseTimeCard(responseTime: Long?, realTimeFactor: Float?) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Real Time Factor:",
+                text = "Synthesis speed:",
                 fontSize = 16.sp,
                 color = AppColors.textSecondaryColor,
                 fontWeight = FontWeight.Medium

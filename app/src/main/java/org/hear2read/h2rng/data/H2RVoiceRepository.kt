@@ -84,6 +84,17 @@ object H2RVoiceRepository {
                 sampleRate = 22050
             ),
             H2RVoice(
+//                assetID = "hi",
+                id = "hi-tdilv2mono-med",
+//                locale = Locale.Builder().setLanguage("hi").build(),
+                sampleRate = 22050
+            ),
+            H2RVoice(
+//                assetID = "hi",
+                id = "hi-tdilv2mono-low",
+//                locale = Locale.Builder().setLanguage("hi").build(),
+            ),
+            H2RVoice(
 //                assetID = "kn",
                 id = "kn-v2-tdilh2radditional-1987val-low",
 //                locale = Locale.Builder().setLanguage("kn").build(),
@@ -205,7 +216,32 @@ object H2RVoiceRepository {
                         downloadProgress = if (isDownloaded) 1f else -1f,
                         downloadedBytes = if (isDownloaded) size else 0L,
                         fileLocation = filePath
-                        )
+                    )
+                } else {
+                    voice
+                }
+            }
+        }
+    }
+    /**
+     * Update both download state and size atomically
+     */
+    suspend fun updateDownloadInfoId(
+        id: String,
+        isDownloaded: Boolean,
+        size: Long,
+        filePath: String?
+    ) = mutex.withLock {
+        _voices.update { currentVoices ->
+            currentVoices.map { voice ->
+                if (voice.id == id) {
+                    voice.copy(
+                        isDownloaded = isDownloaded,
+                        fileSize = size,
+                        downloadProgress = if (isDownloaded) 1f else -1f,
+                        downloadedBytes = if (isDownloaded) size else 0L,
+                        fileLocation = filePath
+                    )
                 } else {
                     voice
                 }
@@ -297,9 +333,18 @@ object H2RVoiceRepository {
     /**
      * Remove a voice by asset pack ID
      */
-    suspend fun removeVoice(assetID: String) = mutex.withLock {
+    suspend fun removeVoiceAssetId(assetID: String) = mutex.withLock {
         _voices.update { currentVoices ->
             currentVoices.filter { it.assetID != assetID }
+        }
+    }
+
+    /**
+     * Remove a voice by voice ID
+     */
+    suspend fun removeVoice(id: String) = mutex.withLock {
+        _voices.update { currentVoices ->
+            currentVoices.filter { it.id != id }
         }
     }
 
